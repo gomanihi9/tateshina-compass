@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Tateshina Compass</title>
+    
+    <!-- PWA Settings -->
+    <meta name="theme-color" content="#f5f0eb">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="蓼科コンパス">
+    
+    <!-- PWA Manifest Link -->
+    <link rel="manifest" href="./manifest.json">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,600;0,800;1,800&family=Zen+Kaku+Gothic+New:wght@700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-color: #f5f0eb;
+            --card-bg: #ffffff;
+            --text-primary: #2d2a26;
+            --text-secondary: #7a756e;
+            --accent-color: #d96b43;
+            --accent-hover: #c45a32;
+            --accent-light: #fceee9;
+            --offline-bg: #eae3d9;
+            --offline-text: #8c7355;
+            --error-text: #c81e1e;
+            --border-color: #e6dfd5;
+            --radius-lg: 24px;
+            --radius-md: 16px;
+            --shadow-soft: 0 12px 32px rgba(45, 42, 38, 0.06);
+            --shadow-button: 0 6px 16px rgba(217, 107, 67, 0.25);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', 'Zen Kaku Gothic New', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 24px 16px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 420px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2px;
+        }
+
+        .app-title {
+            font-size: 2.1rem;
+            font-weight: 900;
+            letter-spacing: -0.03em;
+            color: var(--text-primary);
+            text-transform: uppercase;
+        }
+
+        .app-subtitle {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-top: 2px;
+            letter-spacing: 0.05em;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--radius-lg);
+            padding: 32px 24px;
+            width: 100%;
+            box-shadow: var(--shadow-soft);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border: 1px solid rgba(255, 255, 255, 0.8);
+        }
+
+        /* Integrated Mountain & Map Pin Illustration */
+        .mountain-container {
+            width: 100%;
+            height: 150px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .mountain-svg {
+            width: 100%;
+            height: 100%;
+            max-height: 140px;
+        }
+
+        .location-tag {
+            background-color: var(--accent-light);
+            color: var(--accent-color);
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 800;
+            margin-bottom: 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .location-tag.is-offline {
+            background-color: var(--offline-bg);
+            color: var(--offline-text);
+        }
+
+        .elevation-display {
+            text-align: center;
+            margin: 4px 0 24px 0;
+            width: 100%;
+        }
+
+        .elevation-label {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--text-secondary);
+            letter-spacing: 0.1em;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+        }
+
+        .elevation-value-wrapper {
+            display: flex;
+            align-items: baseline;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .elevation-value {
+            font-size: 4.5rem;
+            font-weight: 800;
+            line-height: 1;
+            letter-spacing: -0.04em;
+            color: var(--text-primary);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .elevation-unit {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: var(--accent-color);
+        }
+
+        .coords-box {
+            background-color: var(--bg-color);
+            border-radius: var(--radius-md);
+            padding: 14px 16px;
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .coord-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .coord-label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: var(--text-secondary);
+        }
+
+        .coord-val {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-top: 2px;
+        }
+
+        .coord-divider {
+            width: 1px;
+            height: 24px;
+            background-color: var(--border-color);
+        }
+
+        .primary-btn {
+            background-color: var(--accent-color);
+            color: #ffffff;
+            border: none;
+            border-radius: var(--radius-md);
+            width: 100%;
+            padding: 18px;
+            font-size: 1.05rem;
+            font-weight: 800;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: var(--shadow-button);
+            transition: transform 0.2s, background-color 0.2s;
+        }
+
+        .primary-btn:active {
+            transform: scale(0.97);
+            background-color: var(--accent-hover);
+        }
+
+        .primary-btn:disabled {
+            background-color: #ccbdaf;
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+
+        .btn-icon {
+            width: 22px;
+            height: 22px;
+            fill: currentColor;
+        }
+
+        .spinner {
+            animation: rotate 1s linear infinite;
+            display: none;
+        }
+
+        @keyframes rotate {
+            100% { transform: rotate(360deg); }
+        }
+
+        .status-msg {
+            font-size: 0.8rem;
+            font-weight: 700;
+            margin-top: 14px;
+            text-align: center;
+            min-height: 1.2em;
+            color: var(--accent-color);
+            line-height: 1.4;
+        }
+
+        .version-badge {
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: #b0a89e;
+            text-align: center;
+            letter-spacing: 0.05em;
+        }
+
+        .footer {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-align: center;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header class="header">
+            <h1 class="app-title">Tateshina Compass</h1>
+            <p class="app-subtitle">信州蓼科 標高ナビゲーター</p>
+        </header>
+
+        <main class="card">
+            <!-- Mountain Overlay with Map Pin SVG -->
+            <div class="mountain-container">
+                <svg class="mountain-svg" viewBox="0 0 300 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Sun -->
+                    <circle cx="210" cy="45" r="26" fill="#f2c5bb"/>
+                    <!-- Background Mountain -->
+                    <path d="M120 120L210 50L300 120H120Z" fill="#93b482"/>
+                    <!-- Foreground Main Mountain -->
+                    <path d="M10 120L135 25L260 120H10Z" fill="#4a7c36"/>
+                    <!-- Mountain Shadow Detail -->
+                    <path d="M135 25L165 65L145 120H10L135 25Z" fill="#325624" opacity="0.18"/>
+                    <!-- Horizon Line -->
+                    <rect x="0" y="117" width="300" height="6" rx="3" fill="#2d2a26"/>
+                    
+                    <!-- Overlay Location Pin on Center Mountain Peak -->
+                    <g transform="translate(0, -10)">
+                        <path d="M135 48C145 48 153 56 153 66C153 78 135 94 135 94C135 94 117 78 117 66C117 56 125 48 135 48Z" fill="#d96b43"/>
+                        <circle cx="135" cy="65" r="5" fill="#fdfbf7"/>
+                    </g>
+                </svg>
+            </div>
+
+            <!-- Location Status Tag -->
+            <div id="locationTag" class="location-tag">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                </svg>
+                <span id="locationName">現在地を検索中...</span>
+            </div>
+
+            <!-- Elevation Display -->
+            <div class="elevation-display">
+                <div class="elevation-label">標高 (海抜)</div>
+                <div class="elevation-value-wrapper">
+                    <span id="elevationValue" class="elevation-value">----</span>
+                    <span class="elevation-unit">m</span>
+                </div>
+            </div>
+
+            <!-- Coordinates Info -->
+            <div class="coords-box">
+                <div class="coord-item">
+                    <span class="coord-label">北緯 (LAT)</span>
+                    <span id="latValue" class="coord-val">--.----</span>
+                </div>
+                <div class="coord-divider"></div>
+                <div class="coord-item">
+                    <span class="coord-label">東経 (LON)</span>
+                    <span id="lonValue" class="coord-val">---.----</span>
+                </div>
+            </div>
+
+            <!-- Main Update Button -->
+            <button id="updateBtn" class="primary-btn">
+                <svg id="refreshIcon" class="btn-icon" viewBox="0 0 24 24">
+                    <path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/>
+                </svg>
+                <svg id="spinnerIcon" class="btn-icon spinner" viewBox="0 0 24 24">
+                    <path d="M12 4V2A10 10 0 0 0 2 12h2a8 8 0 0 1 8-8z"/>
+                </svg>
+                <span id="btnText">現在地を更新する</span>
+            </button>
+
+            <div id="statusMsg" class="status-msg"></div>
+        </main>
+
+        <div class="version-badge">COPECK Version Beta 0.1.1</div>
+
+        <footer class="footer">
+            出典: 国土地理院 標高API
+        </footer>
+    </div>
+
+    <script>
+        // Register Service Worker for Complete Offline App Launch
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').catch((err) => {
+                    console.log('SW registration failed: ', err);
+                });
+            });
+        }
+
+        const elevationValue = document.getElementById('elevationValue');
+        const latValue = document.getElementById('latValue');
+        const lonValue = document.getElementById('lonValue');
+        const locationName = document.getElementById('locationName');
+        const locationTag = document.getElementById('locationTag');
+        const updateBtn = document.getElementById('updateBtn');
+        const btnText = document.getElementById('btnText');
+        const refreshIcon = document.getElementById('refreshIcon');
+        const spinnerIcon = document.getElementById('spinnerIcon');
+        const statusMsg = document.getElementById('statusMsg');
+
+        // Offline Data Storage Keys
+        const STORAGE_KEY = 'copeck_tateshina_last_data';
+
+        // Auto Request Location on App Launch
+        function requestCurrentLocation() {
+            if (!navigator.geolocation) {
+                setStatus('お使いの端末は位置情報に対応していません。', true);
+                loadLastSavedData();
+                return;
+            }
+
+            setLoading(true);
+            setStatus('現在地のGPSを取得中...');
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+                    fetchElevation(lat, lon, '現在地');
+                },
+                (error) => {
+                    setLoading(false);
+                    console.warn('GPS Error/Offline:', error);
+                    loadLastSavedData();
+                    
+                    if (!navigator.onLine) {
+                        setStatus('オフラインです。前回の保存データを表示中', true);
+                    } else if (error.code === error.PERMISSION_DENIED) {
+                        setStatus('位置情報が許可されていません。設定を確認してください。', true);
+                    } else {
+                        setStatus('位置情報の取得に失敗しました。前回のデータを表示中', true);
+                    }
+                },
+                { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+            );
+        }
+
+        updateBtn.addEventListener('click', requestCurrentLocation);
+
+        // Fetch Elevation from GSI API or handle offline fallback
+        async function fetchElevation(lat, lon, name) {
+            setLoading(true);
+            latValue.textContent = lat.toFixed(4);
+            lonValue.textContent = lon.toFixed(4);
+            locationName.textContent = name;
+            locationTag.classList.remove('is-offline');
+            setStatus('国土地理院APIから標高を照会中...');
+
+            const url = `https://cyberjapandata2.gsi.go.jp/general/dem/scripts/getelevation.php?lon=${lon}&lat=${lat}&outtype=JSON`;
+
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error('API Response Error');
+                const data = await response.json();
+
+                if (data && data.elevation !== undefined && data.elevation !== "-----") {
+                    const elevation = parseFloat(data.elevation);
+                    animateElevation(elevation);
+                    setStatus('標高を取得しました');
+
+                    // Save Successful Data to LocalStorage for Offline Mode
+                    saveCurrentData(elevation, lat, lon, name);
+                } else {
+                    elevationValue.textContent = '---';
+                    setStatus('該当場所の標高データが見つかりませんでした。', true);
+                }
+            } catch (err) {
+                console.warn('GSI API Fetch Failed (Offline):', err);
+                loadLastSavedData();
+                if (!navigator.onLine) {
+                    setStatus('電波が届かないため、最後に取得したデータを表示中', true);
+                } else {
+                    setStatus('標高データの取得に失敗しました。', true);
+                }
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        // Cache Data locally
+        function saveCurrentData(elevation, lat, lon, name) {
+            const cacheData = {
+                elevation: elevation,
+                lat: lat,
+                lon: lon,
+                name: name,
+                timestamp: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })
+            };
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(cacheData));
+            } catch (e) {
+                console.warn('LocalStorage save failed', e);
+            }
+        }
+
+        // Load Cached Data when offline or GPS fails
+        function loadLastSavedData() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    elevationValue.textContent = Math.round(data.elevation).toLocaleString();
+                    latValue.textContent = data.lat.toFixed(4);
+                    lonValue.textContent = data.lon.toFixed(4);
+                    locationName.textContent = `${data.name} (${data.timestamp}取得)`;
+                    locationTag.classList.add('is-offline');
+                }
+            } catch (e) {
+                console.warn('LocalStorage load failed', e);
+            }
+        }
+
+        // Elevation Counter Animation
+        function animateElevation(target) {
+            const start = parseFloat(elevationValue.textContent) || 0;
+            const duration = 800;
+            const startTime = performance.now();
+
+            function update(time) {
+                const elapsed = time - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const ease = progress * (2 - progress);
+                const current = start + (target - start) * ease;
+
+                elevationValue.textContent = Math.round(current).toLocaleString();
+                if (progress < 1) requestAnimationFrame(update);
+            }
+            requestAnimationFrame(update);
+        }
+
+        function setLoading(isLoading) {
+            updateBtn.disabled = isLoading;
+            if (isLoading) {
+                refreshIcon.style.display = 'none';
+                spinnerIcon.style.display = 'block';
+                btnText.textContent = '取得中...';
+            } else {
+                refreshIcon.style.display = 'block';
+                spinnerIcon.style.display = 'none';
+                btnText.textContent = '現在地を更新する';
+            }
+        }
+
+        function setStatus(msg, isError = false) {
+            statusMsg.textContent = msg;
+            statusMsg.style.color = isError ? 'var(--error-text)' : 'var(--accent-color)';
+        }
+
+        // Offline/Online Network Listeners
+        window.addEventListener('online', () => setStatus('オンラインに復帰しました'));
+        window.addEventListener('offline', () => setStatus('オフラインモードに切り替わりました', true));
+
+        // Initial Load Action
+        window.addEventListener('load', () => {
+            requestCurrentLocation();
+        });
+    </script>
+</body>
+</html>
+
