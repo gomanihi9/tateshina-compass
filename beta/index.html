@@ -365,7 +365,7 @@
         const btnText = document.getElementById('btnText');
         const refreshIcon = document.getElementById('refreshIcon');
         const spinnerIcon = document.getElementById('spinnerIcon');
-        const statusMsg = document Spain = document.getElementById('statusMsg');
+        const statusMsg = document.getElementById('statusMsg');
 
         const STORAGE_KEY = 'copeck_tateshina_last_data';
 
@@ -393,7 +393,7 @@
                     if (!navigator.onLine) {
                         setStatus('オフラインです。前回の保存データを表示中', true);
                     } else if (error.code === error.PERMISSION_DENIED) {
-                        setStatus('位置情報が許可されていません。設定を確認してください。', true);
+                        setStatus('位置情報が許可されていません。ブラウザ設定を確認してください。', true);
                     } else {
                         setStatus('位置情報の取得に失敗しました。前回のデータを表示中', true);
                     }
