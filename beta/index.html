@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Tateshina Compass Beta</title>
     
-    <!-- PWA Settings -->
+    <!-- PWA Meta Settings -->
     <meta name="theme-color" content="#f5f0eb">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -348,11 +348,12 @@
     </div>
 
     <script>
+        // Register Service Worker from relative path inside beta
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js').catch((err) => {
-                    console.log('SW registration failed: ', err);
-                });
+                navigator.serviceWorker.register('./sw.js', { scope: './' })
+                    .then(reg => console.log('SW Registered!', reg))
+                    .catch(err => console.error('SW Registration Failed:', err));
             });
         }
 
@@ -393,7 +394,7 @@
                     if (!navigator.onLine) {
                         setStatus('オフラインです。前回の保存データを表示中', true);
                     } else if (error.code === error.PERMISSION_DENIED) {
-                        setStatus('位置情報が許可されていません。ブラウザ設定を確認してください。', true);
+                        setStatus('位置情報が許可されていません。設定を確認してください。', true);
                     } else {
                         setStatus('位置情報の取得に失敗しました。前回のデータを表示中', true);
                     }
