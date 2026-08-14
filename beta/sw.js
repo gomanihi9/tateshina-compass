@@ -2,11 +2,9 @@ const CACHE_NAME = 'tateshina-compass-v011-beta';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
-  './manifest.json',
-  './icon.png'
+  './manifest.json'
 ];
 
-// Install Event: Cache app resources
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
@@ -15,7 +13,6 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// Activate Event: Clean up old caches
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
@@ -30,12 +27,11 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch Event: Network-first, fallback to cache
 self.addEventListener('fetch', (event) => {
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        if (response.status === 200) {
+        if (response && response.status === 200) {
           const resClone = response.clone();
           caches.open(CACHE_NAME).then((cache) => {
             cache.put(event.request, resClone);
