@@ -12,7 +12,7 @@
     <meta name="apple-mobile-web-app-title" content="蓼科コンパス β">
     
     <!-- Apple Touch Icon -->
-    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 512 512%27%3E%3Crect width=%27512%27 height=%27512%27 rx=%27110%27 fill=%27%23fdfbf7%27/%3E%3Ccircle cx=%27290%27 cy=%27190%27 r=%2765%27 fill=%27%23f2c5bb%27/%3E%3Cpath d=%27M80 340L256 150L432 340H80Z%27 fill=%27%234a7c36%27/%3E%3Cpath d=%27M256 150L310 220L285 340H80L256 150Z%27 fill=%27%23325624%27 opacity=%270.2%27/%3E%3Cpath d=%27M290 190L370 340H210L290 190Z%27 fill=%27%2393b482%27/%3E%3Crect x=%2770%27 y=%27335%27 width=%27372%27 height=%2710%27 rx=%275%27 fill=%27%232d2a26%27/%3E%3Cpath d=%27M256 380C275 380 290 395 290 414C290 442 256 470 256 470C256 470 222 442 222 414C222 395 237 380 256 380Z%27 fill=%27%23d06a4c%27/%3E%3Ccircle cx=%27256%27 cy=%27414%27 r=%2710%27 fill=%27%23fdfbf7%27/%3E%3C/svg%3E">
+    <link rel="apple-touch-icon" href="./icon.png">
 
     <!-- PWA Manifest Link -->
     <link rel="manifest" href="./manifest.json">
@@ -375,7 +375,6 @@
         let deferredPrompt;
         const pwaInstallBtn = document.getElementById('pwaInstallBtn');
 
-        // Listen for Android Chrome PWA Install Prompt
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
@@ -393,7 +392,6 @@
             }
         });
 
-        // Register Service Worker from relative path
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('./sw.js', { scope: './' })
@@ -563,4 +561,5 @@
     </script>
 </body>
 </html>
+
 
