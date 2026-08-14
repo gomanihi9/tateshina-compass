@@ -1,8 +1,9 @@
-const CACHE_NAME = 'tateshina-compass-v011-pwa';
+const CACHE_NAME = 'tateshina-compass-v011-webapk';
 const ASSETS = [
   './',
   './index.html',
-  './manifest.json'
+  './manifest.json',
+  './icon.png'
 ];
 
 self.addEventListener('install', (event) => {
