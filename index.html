@@ -11,18 +11,18 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="蓼科コンパス">
     
-    <!-- Inline Web App Manifest with Custom Matching Icon -->
+    <!-- PWA Manifest with Uploaded Custom Icon Design -->
     <link rel="manifest" href='data:application/manifest+json,{
         "name": "Tateshina Compass",
         "short_name": "蓼科コンパス",
         "start_url": "./index.html",
         "display": "standalone",
-        "background_color": "#f5f0eb",
-        "theme_color": "#f5f0eb",
+        "background_color": "#fdfbf7",
+        "theme_color": "#fdfbf7",
         "icons": [
             {
-                "src": "data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 192 192%27%3E%3Crect width=%27192%27 height=%27192%27 rx=%2740%27 fill=%27%23f5f0eb%27/%3E%3Ccircle cx=%27110%27 cy=%2760%27 r=%2720%27 fill=%27%23F4A261%27 opacity=%270.4%27/%3E%3Cpath d=%27M30 150L110 50L190 150H30Z%27 fill=%27%236B8E23%27/%3E%3Cpath d=%27M110 50L135 83L120 150H30L110 50Z%27 fill=%27%23556B2F%27 opacity=%270.15%27/%3E%3Ccircle cx=%27110%27 cy=%27105%27 r=%2715%27 fill=%27%23d96b43%27/%3E%3Cpath d=%27M110 95V115M100 105H120%27 stroke=%27%23ffffff%27 stroke-width=%273%27 stroke-linecap=%27round%27/%3E%3C/svg%3E",
-                "sizes": "192x192",
+                "src": "data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 512 512%27%3E%3Crect width=%27512%27 height=%27512%27 rx=%27110%27 fill=%27%23fdfbf7%27/%3E%3Ccircle cx=%27290%27 cy=%27190%27 r=%2765%27 fill=%27%23f2c5bb%27/%3E%3Cpath d=%27M80 340L256 150L432 340H80Z%27 fill=%27%234a7c36%27/%3E%3Cpath d=%27M256 150L310 220L285 340H80L256 150Z%27 fill=%27%23325624%27 opacity=%270.2%27/%3E%3Cpath d=%27M290 190L370 340H210L290 190Z%27 fill=%27%2393b482%27/%3E%3Crect x=%2770%27 y=%27335%27 width=%27372%27 height=%2710%27 rx=%275%27 fill=%27%232d2a26%27/%3E%3Cpath d=%27M256 380C275 380 290 395 290 414C290 442 256 470 256 470C256 470 222 442 222 414C222 395 237 380 256 380Z%27 fill=%27%23d06a4c%27/%3E%3Ccircle cx=%27256%27 cy=%27414%27 r=%2710%27 fill=%27%23fdfbf7%27/%3E%3C/svg%3E",
+                "sizes": "512x512",
                 "type": "image/svg+xml"
             }
         ]
@@ -112,7 +112,7 @@
 
         .mountain-container {
             width: 100%;
-            height: 130px;
+            height: 140px;
             margin-bottom: 10px;
             display: flex;
             justify-content: center;
@@ -122,7 +122,7 @@
         .mountain-svg {
             width: 100%;
             height: 100%;
-            max-height: 120px;
+            max-height: 130px;
         }
 
         .location-tag {
@@ -325,14 +325,21 @@
         </header>
 
         <main class="card">
+            <!-- Uploaded Design Matched Mountain & Sun SVG -->
             <div class="mountain-container">
-                <svg class="mountain-svg" viewBox="0 0 300 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="150" cy="45" r="22" fill="#F4A261" opacity="0.4"/>
-                    <path d="M70 110L140 40L210 110H70Z" fill="#C5D3C1"/>
-                    <path d="M160 110L220 55L280 110H160Z" fill="#A3B899"/>
-                    <path d="M20 110L110 25L200 110H20Z" fill="#6B8E23"/>
-                    <path d="M110 25L135 53L120 110H20L110 25Z" fill="#556B2F" opacity="0.15"/>
-                    <rect x="0" y="106" width="300" height="8" rx="4" fill="#2D2A26"/>
+                <svg class="mountain-svg" viewBox="0 0 300 130" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Sun -->
+                    <circle cx="170" cy="50" r="30" fill="#f2c5bb"/>
+                    <!-- Back/Right Mountain -->
+                    <path d="M140 115L230 55L300 115H140Z" fill="#93b482"/>
+                    <!-- Main Mountain -->
+                    <path d="M20 115L160 30L300 115H20Z" fill="#4a7c36"/>
+                    <path d="M160 30L195 75L175 115H20L160 30Z" fill="#325624" opacity="0.2"/>
+                    <!-- Base Horizon Line -->
+                    <rect x="15" y="111" width="270" height="7" rx="3.5" fill="#2d2a26"/>
+                    <!-- Location Pin Marker Below Horizon -->
+                    <path d="M150 120C158 120 165 127 165 135C165 146 150 155 150 155C150 155 135 146 135 135C135 127 142 120 150 120Z" fill="#d06a4c"/>
+                    <circle cx="150" cy="135" r="4" fill="#fdfbf7"/>
                 </svg>
             </div>
 
@@ -414,7 +421,6 @@
         const spinnerIcon = document.getElementById('spinnerIcon');
         const statusMsg = document.getElementById('statusMsg');
 
-        // 起動時に自動で現在地を取得する関数
         function requestCurrentLocation() {
             if (!navigator.geolocation) {
                 setStatus('お使いのブラウザは位置情報に対応していません。JR茅野駅を表示します。', true);
@@ -519,7 +525,6 @@
             statusMsg.style.color = isError ? 'var(--error-text)' : 'var(--accent-color)';
         }
 
-        // アプリ起動時に即座に現在地モードをリクエスト
         window.addEventListener('load', () => {
             requestCurrentLocation();
         });
