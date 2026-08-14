@@ -1,5 +1,5 @@
-const CACHE_NAME = 'tateshina-compass-v011-beta';
-const ASSETS_TO_CACHE = [
+const CACHE_NAME = 'tateshina-compass-v011-pwa';
+const ASSETS = [
   './',
   './index.html',
   './manifest.json'
@@ -7,9 +7,9 @@ const ASSETS_TO_CACHE = [
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS_TO_CACHE);
-    }).then(() => self.skipWaiting())
+    caches.open(CACHE_NAME)
+      .then((cache) => cache.addAll(ASSETS))
+      .then(() => self.skipWaiting())
   );
 });
 
@@ -28,16 +28,18 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  if (event.request.method !== 'GET') return;
+
   event.respondWith(
     fetch(event.request)
-      .then((response) => {
-        if (response && response.status === 200) {
-          const resClone = response.clone();
+      .then((networkResponse) => {
+        if (networkResponse && networkResponse.status === 200) {
+          const responseClone = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, resClone);
+            cache.put(event.request, responseClone);
           });
         }
-        return response;
+        return networkResponse;
       })
       .catch(() => {
         return caches.match(event.request).then((cachedResponse) => {
