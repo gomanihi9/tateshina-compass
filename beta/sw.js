@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tateshina-compass-v011-webapk';
+const CACHE_NAME = 'tateshina-compass-v012-beta';
 const ASSETS = [
   './',
   './index.html',
