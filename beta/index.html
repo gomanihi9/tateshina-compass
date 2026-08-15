@@ -679,11 +679,24 @@
 
         // --- Area Metadata ---
         const AREA_METADATA = [
-            { id: 'chino', name: '茅野市エリア', size: '約 120 KB' },
-            { id: 'suwa', name: '諏訪市エリア', size: '約 90 KB' },
-            { id: 'haramura', name: '原村エリア', size: '約 60 KB' },
-            { id: 'karuizawa', name: '軽井沢町エリア', size: '約 95 KB' }
+            { id: 'chino', name: '茅野市エリア' },
+            { id: 'suwa', name: '諏訪市エリア' },
+            { id: 'haramura', name: '原村エリア' },
+            { id: 'karuizawa', name: '軽井沢町エリア' }
         ];
+
+        // サーバーから動的に正確なファイルサイズ(KB)を取得する関数
+        async function fetchFileSize(areaId) {
+            try {
+                const res = await fetch(`./data/${areaId}.json`, { method: 'HEAD' });
+                const sizeBytes = res.headers.get('content-length');
+                if (sizeBytes) {
+                    const kb = (parseInt(sizeBytes, 10) / 1024).toFixed(1);
+                    return `約 ${kb} KB`;
+                }
+            } catch (e) {}
+            return 'サイズ確認中';
+        }
 
         // --- PWA Service Worker ---
         if ('serviceWorker' in navigator) {
@@ -721,7 +734,6 @@
         // --- Oxygen Calculation ---
         function calculateOxygenRatio(elevationMeters) {
             if (elevationMeters <= 0) return 100.0;
-            // P = 1013.25 * (1 - 0.0065*h / 288.15)^5.2558
             const pressure = 1013.25 * Math.pow((1 - (0.0065 * elevationMeters) / 288.15), 5.2558);
             const ratio = (pressure / 1013.25) * 100;
             return ratio.toFixed(1);
@@ -758,7 +770,6 @@
             lonValue.textContent = lon.toFixed(4);
 
             if (navigator.onLine) {
-                // Online: Query GSI API
                 setStatus('国土地理院API照会中...');
                 const url = `https://cyberjapandata2.gsi.go.jp/general/dem/scripts/getelevation.php?lon=${lon}&lat=${lat}&outtype=JSON`;
                 try {
@@ -779,7 +790,6 @@
                 }
             }
 
-            // Offline or API failure: Search Offline Grids
             fallbackOfflineSearch(lat, lon);
         }
 
@@ -795,7 +805,6 @@
                 }
             }
 
-            // Fallback to Last Saved Data
             loadLastSavedData();
             setLoading(false);
         }
@@ -889,14 +898,18 @@
             const downloadedIds = await getSavedAreaIds();
             areaList.innerHTML = '';
 
-            AREA_METADATA.forEach(area => {
+            for (let area of AREA_METADATA) {
                 const isDownloaded = downloadedIds.includes(area.id);
+                // リアルタイムにサーバー上の正確なバイトサイズを取得
+                const realSizeText = await fetchFileSize(area.id);
+                area.sizeText = realSizeText;
+
                 const item = document.createElement('div');
                 item.className = 'area-item';
                 item.innerHTML = `
                     <div class="area-info">
                         <span class="area-name">${area.name}</span>
-                        <span class="area-size">${area.size}</span>
+                        <span class="area-size">${realSizeText}</span>
                     </div>
                     <button class="dl-btn ${isDownloaded ? 'downloaded' : ''}" data-id="${area.id}">
                         ${isDownloaded ? '済' : '保存'}
@@ -908,12 +921,12 @@
                     btn.addEventListener('click', () => promptDownload(area));
                 }
                 areaList.appendChild(item);
-            });
+            }
         }
 
         function promptDownload(area) {
             pendingDlArea = area;
-            confirmText.textContent = `「${area.name}」（容量: ${area.size}）をダウンロードしてオフラインで利用できるようにしますか？`;
+            confirmText.textContent = `「${area.name}」（容量: ${area.sizeText}）をダウンロードしてオフラインで利用できるようにしますか？`;
             confirmBox.style.display = 'flex';
         }
 
