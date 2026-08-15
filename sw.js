@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tateshina-compass-v012-beta';
+const CACHE_NAME = 'tateshina-compass-v100-stable';
 const ASSETS = [
   './',
   './index.html',
