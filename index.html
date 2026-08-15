@@ -581,7 +581,7 @@
             </div>
             <div>
                 <h2 class="landing-title">Tateshina Compass へようこそ</h2>
-                <p class="landing-desc" style="margin-top: 8px;">このアプリは、ホーム画面に追加して専用アプリ（PWA）として起動することで、オフラインでも快適に動作します。</p>
+                <p class="landing-desc" style="margin-top: 8px;">このアプリは、ホーム画面に追加して専用アプリとして起動することで、オフラインでも快適に動作します。</p>
             </div>
 
             <button id="installAppBtn" class="primary-btn">
@@ -735,7 +735,6 @@
             const landing = document.getElementById('browserLanding');
             
             if (!isStandalone) {
-                // ブラウザで直接開かれている場合はランディング画面を表示して中身を隠す
                 landing.style.display = 'flex';
             } else {
                 landing.style.display = 'none';
