@@ -1,6 +1,6 @@
 {
-    "name": "Tateshina Compass Beta",
-    "short_name": "蓼科コンパスβ",
+    "name": "Tateshina Compass",
+    "short_name": "蓼科コンパス",
     "description": "信州蓼科 標高ナビゲーター (COPECK)",
     "start_url": "./index.html",
     "scope": "./",
