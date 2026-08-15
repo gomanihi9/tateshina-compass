@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tateshina Compass Beta</title>
+    <title>Tateshina Compass</title>
     
     <!-- PWA Settings -->
     <meta name="theme-color" content="#f5f0eb">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="蓼科コンパス β">
+    <meta name="apple-mobile-web-app-title" content="蓼科コンパス">
     <link rel="apple-touch-icon" href="./icon.png">
     <link rel="manifest" href="./manifest.json">
 
@@ -579,7 +579,7 @@
             <div id="statusMsg" class="status-msg"></div>
         </main>
 
-        <div class="version-badge">COPECK Version Beta 0.1.2</div>
+        <div class="version-badge">COPECK Version 1.0.0 (Stable)</div>
         <footer class="footer">出典: 国土地理院 標高API / オフラインデータ</footer>
     </div>
 
@@ -685,7 +685,6 @@
             { id: 'karuizawa', name: '軽井沢町エリア' }
         ];
 
-        // サーバーから動的に正確なファイルサイズ(KB)を取得する関数
         async function fetchFileSize(areaId) {
             try {
                 const res = await fetch(`./data/${areaId}.json`, { method: 'HEAD' });
@@ -900,7 +899,6 @@
 
             for (let area of AREA_METADATA) {
                 const isDownloaded = downloadedIds.includes(area.id);
-                // リアルタイムにサーバー上の正確なバイトサイズを取得
                 const realSizeText = await fetchFileSize(area.id);
                 area.sizeText = realSizeText;
 
@@ -949,7 +947,7 @@
                 confirmBox.style.display = 'none';
                 await renderAreaList();
             } catch (e) {
-                alert('ダウンロードに失敗しました。`beta/data/` フォルダのファイルを確認してください。');
+                alert('ダウンロードに失敗しました。');
             } finally {
                 execDlBtn.disabled = false;
                 execDlBtn.textContent = 'ダウンロード実行';
@@ -957,7 +955,6 @@
             }
         });
 
-        // Event Listeners
         updateBtn.addEventListener('click', requestCurrentLocation);
         window.addEventListener('load', requestCurrentLocation);
     </script>
