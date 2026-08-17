@@ -6,7 +6,6 @@ on:
       - main
       - beta
 
-# gh-pagesブランチへの書き込み権限を付与
 permissions:
   contents: write
 
@@ -17,25 +16,34 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # mainブランチの場合はルート直下に配置
+      # mainブランチの場合は、そのままルート階層にデプロイする準備
       - name: Prepare files for main
         if: github.ref_name == 'main'
         run: |
-          mkdir -p dist
-          rsync -av --exclude='dist' --exclude='.github' ./ dist/
+          mkdir -p dist_main
+          rsync -av --exclude='dist_main' --exclude='.github' ./ dist_main/
 
-      # betaブランチの場合は「beta」フォルダの中に配置
+      # betaブランチの場合は、betaというフォルダの中にデプロイする準備
       - name: Prepare files for beta
         if: github.ref_name == 'beta'
         run: |
-          mkdir -p dist/beta
-          rsync -av --exclude='dist' --exclude='.github' ./ dist/beta/
+          mkdir -p dist_beta/beta
+          rsync -av --exclude='dist_beta' --exclude='.github' ./ dist_beta/beta/
 
-      # 💡 魔法のステップ：既存のgh-pagesブランチの内容を消さずに、今回の差分だけを安全にマージして公開する
-      - name: Deploy to GitHub Pages Branch
+      # mainブランチのデプロイ処理
+      - name: Deploy Main to gh-pages
+        if: github.ref_name == 'main'
         uses: JamesIves/github-pages-deploy-action@v4
         with:
-          branch: gh-pages      # 公開専用のブランチ名
-          folder: dist          # アップロードするフォルダ
-          target-folder: ${{ github.ref_name == 'beta' && 'beta' || '.' }} # betaならbetaフォルダへ、mainならルートへ
-          clean: false          # 🔴超重要：既存の別ブランチのファイルを消去しない設定
+          branch: gh-pages
+          folder: dist_main
+          clean: false # 🔴既存のbetaフォルダを絶対に消さない
+
+      # betaブランチのデプロイ処理
+      - name: Deploy Beta to gh-pages
+        if: github.ref_name == 'beta'
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: gh-pages
+          folder: dist_beta
+          clean: false # 🔴既存のmainのファイルを絶対に消さない
