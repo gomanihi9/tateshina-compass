@@ -74,7 +74,7 @@
         .close-btn { background: none; border: none; font-size: 1.5rem; color: var(--sub); cursor: pointer; transition: transform 0.2s; }
         .close-btn:active { transform: scale(0.8); }
         
-        .area-list { display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto; }
+        .area-list { display: flex; flex-direction: column; gap: 8px; max-height: 180px; overflow-y: auto; }
         .area-item { background: var(--bg); border-radius: var(--radius-md); padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border); }
         .area-actions { display: flex; gap: 6px; align-items: center; }
         
@@ -85,7 +85,7 @@
         .del-btn:active { transform: scale(0.88); }
 
         .gen-section { border-top: 1px solid var(--border); padding-top: 12px; display: flex; flex-direction: column; gap: 10px; }
-        .form-input { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); font-size: 0.9rem; outline: none; font-weight: 700; color: var(--text); }
+        .form-select { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); font-size: 0.9rem; outline: none; font-weight: 700; color: var(--text); }
         
         /* Turbo Terminal & Progress Bar */
         .progress-container { display: none; flex-direction: column; gap: 6px; width: 100%; }
@@ -173,7 +173,7 @@
             <div id="statusMsg" class="status-msg"></div>
         </main>
 
-        <div class="version-badge">COPECK Version 1.1.0 (Ultimate Turbo)</div>
+        <div class="version-badge">COPECK Version 1.1.2 (Kantou-Koushin'etsu Complete)</div>
     </div>
 
     <!-- Download Modal -->
@@ -186,22 +186,85 @@
             
             <div id="areaList" class="area-list"></div>
 
-            <!-- GSI Official Search Dynamic Generator with Turbo & Progress -->
+            <!-- Kantou-Koushin'etsu Master Pulldown Generator -->
             <div class="gen-section">
-                <div style="font-size: 0.85rem; font-weight: 800;">🗺️ 国土地理院から新エリアを追加</div>
-                <input type="text" id="citySearchInput" class="form-input" placeholder="市区町村名を入力 (例: 茅野市, 松本市)">
+                <div style="font-size: 0.85rem; font-weight: 800;">🗺️ 関東甲信越からエリアを追加</div>
+                <select id="prefSelect" class="form-select">
+                    <option value="">都道府県を選択...</option>
+                    <option value="nagano">長野県</option>
+                    <option value="yamanashi">山梨県</option>
+                    <option value="gunma">群馬県</option>
+                    <option value="tochigi">栃木県</option>
+                    <option value="niigata">新潟県</option>
+                    <option value="saitama">埼玉県</option>
+                    <option value="tokyo">東京都</option>
+                    <option value="kanagawa">神奈川県</option>
+                </select>
+
+                <select id="citySelect" class="form-select" disabled>
+                    <option value="">市区町村を選択...</option>
+                </select>
                 
                 <div id="progressContainer" class="progress-container">
                     <div class="progress-bar-bg"><div id="progressBarFill" class="progress-bar-fill"></div></div>
                     <div id="terminalLog" class="terminal-log">準備完了</div>
                 </div>
 
-                <button id="generateBtn" class="primary-btn" style="padding: 14px; font-size: 0.88rem;">国土地理院APIから並列ターボ取得</button>
+                <button id="generateBtn" class="primary-btn" style="padding: 14px; font-size: 0.88rem;" disabled>選択エリアを並列ターボ取得</button>
             </div>
         </div>
     </div>
 
     <script>
+        // --- Kantou-Koushin'etsu Accurate Municipal Bounds Master ---
+        const MUNICIPAL_BOUNDS = {
+            nagano: [
+                { name: '茅野市', bounds: { minLat: 35.85, maxLat: 36.15, minLon: 138.02, maxLon: 138.38 } },
+                { name: '諏訪市', bounds: { minLat: 35.95, maxLat: 36.14, minLon: 138.03, maxLon: 138.25 } },
+                { name: '原村', bounds: { minLat: 35.92, maxLat: 36.06, minLon: 138.16, maxLon: 138.35 } },
+                { name: '軽井沢町', bounds: { minLat: 36.28, maxLat: 36.48, minLon: 138.52, maxLon: 138.73 } },
+                { name: '松本市', bounds: { minLat: 36.10, maxLat: 36.35, minLon: 137.75, maxLon: 138.15 } },
+                { name: '長野市', bounds: { minLat: 36.50, maxLat: 36.80, minLon: 137.95, maxLon: 138.35 } },
+                { name: '白馬村', bounds: { minLat: 36.55, maxLat: 36.82, minLon: 137.78, maxLon: 137.98 } },
+                { name: '富士見町', bounds: { minLat: 35.82, maxLat: 35.98, minLon: 138.14, maxLon: 138.33 } }
+            ],
+            yamanashi: [
+                { name: '甲府市', bounds: { minLat: 35.58, maxLat: 35.82, minLon: 138.48, maxLon: 138.72 } },
+                { name: '富士吉田市', bounds: { minLat: 35.40, maxLat: 35.55, minLon: 138.72, maxLon: 138.90 } },
+                { name: '北杜市', bounds: { minLat: 35.72, maxLat: 36.00, minLon: 138.22, maxLon: 138.58 } },
+                { name: '南アルプス市', bounds: { minLat: 35.52, maxLat: 35.75, minLon: 138.15, maxLon: 138.52 } }
+            ],
+            gunma: [
+                { name: '前橋市', bounds: { minLat: 36.30, maxLat: 36.55, minLon: 138.98, maxLon: 139.25 } },
+                { name: '高崎市', bounds: { minLat: 36.20, maxLat: 36.48, minLon: 138.75, maxLon: 139.12 } },
+                { name: '草津町', bounds: { minLat: 36.55, maxLat: 36.70, minLon: 138.52, maxLon: 138.68 } },
+                { name: 'みなかみ町', bounds: { minLat: 36.62, maxLat: 36.92, minLon: 138.78, maxLon: 139.20 } }
+            ],
+            tochigi: [
+                { name: '宇都宮市', bounds: { minLat: 36.45, maxLat: 36.72, minLon: 139.75, maxLon: 140.05 } },
+                { name: '日光市', bounds: { minLat: 36.62, maxLat: 37.05, minLon: 139.25, maxLon: 139.85 } },
+                { name: '那須町', bounds: { minLat: 36.92, maxLat: 37.18, minLon: 139.92, maxLon: 140.25 } }
+            ],
+            niigata: [
+                { name: '新潟市', bounds: { minLat: 37.70, maxLat: 38.05, minLon: 138.80, maxLon: 139.30 } },
+                { name: '長岡市', bounds: { minLat: 37.25, maxLat: 37.65, minLon: 138.60, maxLon: 139.05 } },
+                { name: '湯沢町', bounds: { minLat: 36.78, maxLat: 37.02, minLon: 138.72, maxLon: 138.98 } }
+            ],
+            saitama: [
+                { name: 'さいたま市', bounds: { minLat: 35.80, maxLat: 36.00, minLon: 139.52, maxLon: 139.78 } },
+                { name: '秩父市', bounds: { minLat: 35.82, maxLat: 36.12, minLon: 138.75, maxLon: 139.20 } }
+            ],
+            tokyo: [
+                { name: '東京都区部', bounds: { minLat: 35.52, maxLat: 35.82, minLon: 139.52, maxLon: 139.92 } },
+                { name: '八王子市', bounds: { minLat: 35.58, maxLat: 35.75, minLon: 139.15, maxLon: 139.42 } },
+                { name: '奥多摩町', bounds: { minLat: 35.72, maxLat: 35.90, minLon: 138.92, maxLon: 139.22 } }
+            ],
+            kanagawa: [
+                { name: '横浜市', bounds: { minLat: 35.30, maxLat: 35.60, minLon: 139.45, maxLon: 139.75 } },
+                { name: '箱根町', bounds: { minLat: 35.12, maxLat: 35.30, minLon: 138.95, maxLon: 139.15 } }
+            ]
+        };
+
         const DB_NAME = 'TateshinaCompassDB', DB_VERSION = 1, STORE_NAME = 'offline_grids';
         function openDB() {
             return new Promise((resolve, reject) => {
@@ -313,7 +376,7 @@
             function update(time) {
                 const elapsed = time - startTime;
                 const progress = Math.min(elapsed / duration, 1);
-                const ease = 1 - Math.pow(1 - progress, 3); // Cubic ease out
+                const ease = 1 - Math.pow(1 - progress, 3);
                 const current = start + (target - start) * ease;
                 $('elevationValue').textContent = Math.round(current).toLocaleString();
                 if (progress < 1) requestAnimationFrame(update);
@@ -321,29 +384,42 @@
             requestAnimationFrame(update);
         }
 
-        // --- Turbo Generator with Parallel Fetch & Terminal Progress ---
+        // --- Pulldown Event Handlers ---
+        $('prefSelect').addEventListener('change', (e) => {
+            const pref = e.target.value;
+            const citySel = $('citySelect');
+            citySel.innerHTML = '<option value="">市区町村を選択...</option>';
+            if (pref && MUNICIPAL_BOUNDS[pref]) {
+                citySel.disabled = false;
+                MUNICIPAL_BOUNDS[pref].forEach((city, idx) => {
+                    citySel.innerHTML += `<option value="${idx}">${city.name}</option>`;
+                });
+            } else {
+                citySel.disabled = true;
+                $('generateBtn').disabled = true;
+            }
+        });
+
+        $('citySelect').addEventListener('change', (e) => {
+            $('generateBtn').disabled = (e.target.value === "");
+        });
+
+        // --- Turbo Generator with Accurate Bounds ---
         $('generateBtn').addEventListener('click', async () => {
-            const query = $('citySearchInput').value.trim();
-            if (!query) return alert('市区町村名を入力してください');
+            const pref = $('prefSelect').value;
+            const cityIdx = $('citySelect').value;
+            if (!pref || cityIdx === "") return;
+
+            const targetCity = MUNICIPAL_BOUNDS[pref][parseInt(cityIdx, 10)];
+            const bounds = targetCity.bounds;
 
             $('generateBtn').disabled = true;
             $('progressContainer').style.display = 'flex';
             const log = $('terminalLog'), fill = $('progressBarFill');
-            log.textContent = `[INFO] "${query}" の位置情報を国土地理院から検索中...`;
-            fill.style.width = '10%';
+            log.textContent = `[INFO] "${targetCity.name}" の正確な境界から並列ターボ取得を開始します...`;
+            fill.style.width = '20%';
 
             try {
-                const searchRes = await fetch(`https://msearch.gsi.go.jp/address-search/AddressSearch?q=${encodeURIComponent(query)}`);
-                const searchData = await searchRes.json();
-                if (!searchData || searchData.length === 0) throw new Error('地域が見つかりませんでした');
-
-                const centerLon = searchData[0].geometry.coordinates[0];
-                const centerLat = searchData[0].geometry.coordinates[1];
-                const bounds = { minLat: centerLat - 0.06, maxLat: centerLat + 0.06, minLon: centerLon - 0.06, maxLon: centerLon + 0.06 };
-
-                log.textContent = `[INFO] 境界特定完了。並列ターボ取得を開始します...`;
-                fill.style.width = '30%';
-
                 const MESH = 0.004;
                 let lats = [], lons = [];
                 for (let lat = bounds.minLat; lat <= bounds.maxLat; lat += MESH) lats.push(lat);
@@ -364,17 +440,22 @@
                     elevations.push(rowResult);
                     completedRows++;
                     
-                    let percent = 30 + Math.round((completedRows / totalRows) * 60);
+                    let percent = 20 + Math.round((completedRows / totalRows) * 75);
                     fill.style.width = `${percent}%`;
-                    log.textContent = `[TURBO] 行データ取得中... (${completedRows}/${totalRows})`;
+                    log.textContent = `[TURBO] 取得中 (${completedRows}/${totalRows})`;
                 }
 
-                const areaId = `gsi_${Date.now()}`;
-                await saveOfflineGrid({ areaId, areaName: query, bounds, elevations });
+                const areaId = `custom_${pref}_${cityIdx}_${Date.now()}`;
+                await saveOfflineGrid({ areaId, areaName: targetCity.name, bounds, elevations });
 
                 fill.style.width = '100%';
-                log.textContent = `[SUCCESS] 「${query}」のデータを保存しました！`;
-                $('citySearchInput').value = '';
+                log.textContent = `[SUCCESS] 「${targetCity.name}」のデータを保存しました！`;
+                
+                $('prefSelect').value = "";
+                $('citySelect.innerHTML').value = "";
+                $('citySelect').disabled = true;
+                $('generateBtn').disabled = true;
+
                 await renderAreaList();
             } catch (e) {
                 log.textContent = `[ERROR] ${e.message || '取得失敗'}`;
@@ -405,7 +486,7 @@
                 if (!DEFAULT_AREAS.some(d => d.id === area.areaId)) {
                     areaListEl.innerHTML += `
                         <div class="area-item">
-                            <span>${area.areaName} (カスタム)</span>
+                            <span>${area.areaName}</span>
                             <div class="area-actions">
                                 <button class="dl-btn downloaded">保存済</button>
                                 <button class="del-btn" onclick="removeArea('${area.areaId}')">×</button>
@@ -444,4 +525,4 @@
     </script>
 </body>
 </html>
-```eof
+
