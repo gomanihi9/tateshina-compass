@@ -6,50 +6,36 @@ on:
       - main
       - beta
 
-# GitHub Pagesへのデプロイに必要な権限を付与
+# gh-pagesブランチへの書き込み権限を付与
 permissions:
   contents: write
-  pages: write
-  id-token: write
-
-concurrency:
-  group: "pages"
-  cancel-in-progress: false
 
 jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
-
-      # betaブランチの場合のみ、成果物を「beta」フォルダに移動させてURLを分ける
-      - name: Organize build folder for beta
-        if: github.ref_name == 'beta'
-        run: |
-          mkdir -p _site/beta
-          rsync -av --exclude='_site' ./ _site/beta/
-          rm -rf _site/beta/.github
-
-      # mainブランチの場合はそのままルートに配置
-      - name: Organize build folder for main
+      # mainブランチの場合はルート直下に配置
+      - name: Prepare files for main
         if: github.ref_name == 'main'
         run: |
-          mkdir -p _site
-          rsync -av --exclude='_site' ./ _site/
+          mkdir -p dist
+          rsync -av --exclude='dist' --exclude='.github' ./ dist/
 
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+      # betaブランチの場合は「beta」フォルダの中に配置
+      - name: Prepare files for beta
+        if: github.ref_name == 'beta'
+        run: |
+          mkdir -p dist/beta
+          rsync -av --exclude='dist' --exclude='.github' ./ dist/beta/
+
+      # 💡 魔法のステップ：既存のgh-pagesブランチの内容を消さずに、今回の差分だけを安全にマージして公開する
+      - name: Deploy to GitHub Pages Branch
+        uses: JamesIves/github-pages-deploy-action@v4
         with:
-          path: './_site'
-
-      # 事前に作成された _site をそのままPagesにデプロイ
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          branch: gh-pages      # 公開専用のブランチ名
+          folder: dist          # アップロードするフォルダ
+          target-folder: ${{ github.ref_name == 'beta' && 'beta' || '.' }} # betaならbetaフォルダへ、mainならルートへ
+          clean: false          # 🔴超重要：既存の別ブランチのファイルを消去しない設定
