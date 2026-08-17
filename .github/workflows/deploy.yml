@@ -1,0 +1,49 @@
+name: Deploy Both Main and Beta to GitHub Pages
+
+on:
+  push:
+    branches: [ main, beta ]
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main branch
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: main_src
+
+      - name: Checkout beta branch
+        uses: actions/checkout@v4
+        with:
+          ref: beta
+          path: beta_src
+
+      - name: Prepare deployment directory
+        run: |
+          mkdir -p public_html
+          # main の中身をルートにコピー
+          cp -r main_src/* public_html/
+          # beta の中身を public_html/beta にコピー (betaフォルダが存在する場合)
+          if [ -d "beta_src" ]; then
+            mkdir -p public_html/beta
+            cp -r beta_src/* public_html/beta/
+          fi
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: 'public_html'
+
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4
+
