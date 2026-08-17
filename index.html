@@ -61,7 +61,7 @@
         .primary-btn:active { transform: scale(0.96); background: var(--accent-hover); }
         .primary-btn:disabled { background: #ccbdaf; box-shadow: none; cursor: not-allowed; }
         
-        .status-msg { font-size: 0.8rem; font-weight: 700; margin-top: 12px; text-align: center; color: var(--accent); min-height: 1.2em; }
+        .status-msg { font-size: 0.8rem; font-weight: 700; margin-top: 12px; text-align: center; color: var(--accent); min-height: 1.2em; word-break: break-all; }
         .version-badge { font-size: 0.7rem; font-weight: 700; color: #b0a89e; text-align: center; margin-top: 12px; }
         
         /* Modal Styles */
@@ -116,7 +116,7 @@
             </div>
 
             <div id="locationTag" class="location-tag">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5-2.5z"/></svg>
                 <span id="locationName">現在地を検索中...</span>
             </div>
 
@@ -147,7 +147,7 @@
             <div id="statusMsg" class="status-msg"></div>
         </main>
 
-        <div class="version-badge">COPECK Version Beta 0.1.3</div>
+        <div class="version-badge">COPECK Version Beta 0.1.3-R2</div>
     </div>
 
     <!-- Download Modal -->
@@ -193,6 +193,13 @@
     <script>
         const DB_NAME = 'TateshinaCompassDB', DB_VERSION = 1, STORE_NAME = 'offline_grids';
         let masterBoundsData = null;
+
+        // 🌟 GitHub PagesのベースURLを自動動的取得（サブディレクトリでも絶対にズレない）
+        function getBaseUrl() {
+            const path = window.location.pathname;
+            const dir = path.substring(0, path.lastIndexOf('/') + 1);
+            return window.location.origin + dir;
+        }
 
         function openDB() {
             return new Promise((resolve, reject) => {
@@ -244,7 +251,10 @@
         const $ = id => document.getElementById(id);
 
         function requestLocation() {
-            if (!navigator.geolocation) return;
+            if (!navigator.geolocation) {
+                $('statusMsg').textContent = 'GPS非対応のブラウザです';
+                return;
+            }
             $('statusMsg').textContent = 'GPS測位中...';
             navigator.geolocation.getCurrentPosition(async pos => {
                 const { latitude: lat, longitude: lon } = pos.coords;
@@ -273,8 +283,8 @@
                 } else {
                     $('statusMsg').textContent = '対応エリア外です。データを追加してください。';
                 }
-            }, () => {
-                $('statusMsg').textContent = 'GPS取得失敗';
+            }, err => {
+                $('statusMsg').textContent = 'GPS取得失敗（位置情報を許可してください）';
             }, { enableHighAccuracy: true, timeout: 8000 });
         }
 
@@ -303,13 +313,14 @@
         async function loadMasterBounds() {
             if (masterBoundsData) return masterBoundsData;
             try {
-                // 相対パスで境界マスタを取得
-                const res = await fetch('data/kantou_koushinetsu_bounds.json');
-                if (!res.ok) throw new Error("JSON 404 Not Found");
+                // 🌟 絶対確実な動的URLでフェッチ
+                const targetUrl = getBaseUrl() + 'data/kantou_koushinetsu_bounds.json';
+                const res = await fetch(targetUrl);
+                if (!res.ok) throw new Error("JSON 404 (ファイル未配置)");
                 masterBoundsData = await res.json();
                 return masterBoundsData;
             } catch(e) {
-                alert('境界マスタの取得に失敗しました。`/data/kantou_koushinetsu_bounds.json` が配置されているか確認してください。');
+                alert('【データ未設定】`data/kantou_koushinetsu_bounds.json` をGitHubにアップロードしてください。');
                 return null;
             }
         }
@@ -327,14 +338,4 @@
                     <div class="area-item">
                         <span>${area.name}</span>
                         <div class="area-actions">
-                            <button class="dl-btn ${isDl ? 'downloaded' : ''}" onclick="downloadPreset('${area.id}')">${isDl ? '保存済' : '保存'}</button>
-                            ${isDl ? `<button class="del-btn" onclick="removeArea('${area.id}')">×</button>` : ''}
-                        </div>
-                    </div>`;
-            });
-
-            allSaved.forEach(area => {
-                if (!DEFAULT_AREAS.some(d => d.id === area.areaId)) {
-                    list.innerHTML += `
-                        <div class="area-item">
-                            <s
+                            <button class="dl-btn ${isDl ? 'downloaded' : ''}" onclick="downloadPrese
