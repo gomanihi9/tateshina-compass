@@ -71,7 +71,7 @@
         .close-btn { background: none; border: none; font-size: 1.5rem; color: var(--sub); cursor: pointer; }
         
         .area-list { display: flex; flex-direction: column; gap: 8px; max-height: 160px; overflow-y: auto; }
-        .area-item { background: var(--bg); border-radius: var(--radius-md); padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border); }
+        .area-item { background: var(--bg); border-radius: var(--radius-md); padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border); font-size: 0.9rem; font-weight: 700; }
         .dl-btn { background: var(--accent); color: #fff; border: none; border-radius: 20px; padding: 6px 12px; font-size: 0.75rem; font-weight: 800; cursor: pointer; }
         .dl-btn.downloaded { background: #81c784; cursor: default; }
         .del-btn { background: #ffcdd2; color: #c62828; border: none; border-radius: 50%; width: 26px; height: 26px; font-size: 0.8rem; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; }
@@ -101,7 +101,7 @@
                 <h1 class="app-title">Tateshina Compass</h1>
                 <p class="app-subtitle">信州蓼科 標高ナビゲーター</p>
             </div>
-            <button id="openDlModalBtn" class="icon-btn">
+            <button id="openDlModalBtn" class="icon-btn" aria-label="ダウンロードモーダルを開く">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
             </button>
         </header>
@@ -144,7 +144,7 @@
             <div id="statusMsg" class="status-msg"></div>
         </main>
 
-        <div class="version-badge">COPECK Beta 0.1.3</div>
+        <div class="version-badge">COPECK Beta 0.1.3 (Fixed)</div>
     </div>
 
     <!-- Modal -->
@@ -201,14 +201,18 @@
         }
 
         async function getDBData(mode, storeName, op, val) {
-            const db = await openDB();
-            return new Promise(res => {
-                const tx = db.transaction(storeName, mode);
-                const store = tx.objectStore(storeName);
-                const req = op === 'getAll' ? store.getAll() : op === 'put' ? store.put(val) : store.delete(val);
-                req.onsuccess = () => res(req.result);
-                req.onerror = () => res(null);
-            });
+            try {
+                const db = await openDB();
+                return new Promise(res => {
+                    const tx = db.transaction(storeName, mode);
+                    const store = tx.objectStore(storeName);
+                    const req = op === 'getAll' ? store.getAll() : op === 'put' ? store.put(val) : store.delete(val);
+                    req.onsuccess = () => res(req.result);
+                    req.onerror = () => res(null);
+                });
+            } catch(e) {
+                return null;
+            }
         }
 
         const $ = id => document.getElementById(id);
@@ -243,7 +247,9 @@
                 } else {
                     $('statusMsg').textContent = '対応エリア外です。';
                 }
-            });
+            }, () => {
+                $('statusMsg').textContent = 'GPS取得失敗';
+            }, { enableHighAccuracy: true, timeout: 8000 });
         }
 
         async function searchOffline(lat, lon) {
@@ -253,7 +259,7 @@
                 if (lat >= b.minLat && lat <= b.maxLat && lon >= b.minLon && lon <= b.maxLon) {
                     const r = Math.round((lat - b.minLat) / 0.004);
                     const c = Math.round((lon - b.minLon) / 0.004);
-                    if (area.elevations[r] && area.elevations[r][c] !== undefined) {
+                    if (area.elevations && area.elevations[r] && area.elevations[r][c] !== undefined) {
                         return { elevation: area.elevations[r][c], areaName: area.areaName };
                     }
                 }
@@ -279,668 +285,64 @@
             requestAnimationFrame(update);
         }
 
+        // --- Area List UI ---
+        async function renderAreaList() {
+            const allSaved = await getDBData('readonly', STORE_NAME, 'getAll') || [];
+            const savedIds = allSaved.map(s => s.areaId);
+            const list = $('areaList');
+            list.innerHTML = '';
+
+            const defaults = [{ id: 'chino', name: '茅野市' }, { id: 'suwa', name: '諏訪市' }, { id: 'haramura', name: '原村' }, { id: 'karuizawa', name: '軽井沢町' }];
+            defaults.forEach(a => {
+                const isDl = savedIds.includes(a.id);
+                list.innerHTML += `<div class="area-item"><span>${a.name}</span><button class="dl-btn ${isDl ? 'downloaded' : ''}" onclick="dlPreset('${a.id}')">${isDl ? '保存済' : '保存'}</button></div>`;
+            });
+
+            allSaved.forEach(a => {
+                if (!defaults.some(d => d.id === a.areaId)) {
+                    list.innerHTML += `<div class="area-item"><span>${a.areaName}</span><button class="del-btn" onclick="delArea('${a.areaId}')">×</button></div>`;
+                }
+            });
+        }
+
+        window.dlPreset = async id => {
+            try {
+                const res = await fetch(`./data/${id}.json`);
+                const json = await res.json();
+                await getDBData('readwrite', STORE_NAME, 'put', json);
+                renderAreaList();
+            } catch(e) {
+                alert('ダウンロード失敗');
+            }
+        };
+
+        window.delArea = async id => {
+            await getDBData('readwrite', STORE_NAME, 'delete', id);
+            renderAreaList();
+        };
+
         // --- Pulldown & Generator ---
-        $('prefSelect').onchange = async e => {
+        $('prefSelect').addEventListener('change', async e => {
             const pref = e.target.value;
             const citySel = $('citySelect');
             citySel.innerHTML = '<option value="">読み込み中...</option>';
             if (!pref) { citySel.disabled = true; $('generateBtn').disabled = true; return; }
             
             if (!masterBounds) {
-                const res = await fetch('./data/kantou_koushinetsu_bounds.json');
-                masterBounds = await res.json();
+                try {
+                    const res = await fetch('./data/kantou_koushinetsu_bounds.json');
+                    masterBounds = await res.json();
+                } catch(e) {
+                    alert('`kantou_koushinetsu_bounds.json` のロードに失敗しました。');
+                    citySel.disabled = true;
+                    return;
+                }
             }
             citySel.innerHTML = '<option value="">市区町村を選択...</option>';
             if (masterBounds && masterBounds[pref]) {
                 citySel.disabled = false;
                 masterBounds[pref].forEach((c, i) => citySel.innerHTML += `<option value="${i}">${c.name}</option>`);
             }
-        };
-
-        $('citySelect').onchange = e => $('generateBtn').disabled = (e.target.value === "");
-
-        $('generateBtn').onclick = async () => {
-            const pref = $('prefSelect').value, cityIdx = $('citySelect').value;
-            if (!pref || cityIdx === "") return;
-
-            const targetCity = masterBounds[pref][parseInt(cityIdx, 10)];
-            const b = targetCity.bounds;
-            $('generateBtn').disabled = true;
-            $('progressContainer').style.display = 'flex';
-            const log = $('terminalLog'), fill = $('progressBarFill');
-
-            const MESH = 0.004;
-            let lats = [], lons = [];
-            for (let lat = b.minLat; lat <= b.maxLat; lat += MESH) lats.push(lat);
-            for (let lon = b.minLon; lon <= b.maxLon; lon += MESH) lons.push(lon);
-
-            let points = [];
-            lats.forEach((lat, r) => lons.forEach((lon, c) => points.push({ r, c, lat, lon })));
-            
-            let elevations = Array(lats.length).fill(0).map(() => Array(lons.length).fill(0));
-            let done = 0;
-
-            for (let i = 0; i < points.length; i += 30) {
-                let chunk = points.slice(i, i + 30);
-                let results = await Promise.all(chunk.map(async p => {
-                    try {
-                        const res = await fetch(`https://cyberjapandata2.gsi.go.jp/general/dem/scripts/getelevation.php?lon=${p.lon.toFixed(4)}&lat=${p.lat.toFixed(4)}&outtype=JSON`);
-                        const d = await res.json();
-                        return { r: p.r, c: p.c, ele: (d && d.elevation !== "-----") ? Math.round(parseFloat(d.elevation)) : 0 };
-                    } catch(e) { return { r: p.r, c: p.c, ele: 0 }; }
-                }));
-                results.forEach(res => elevations[res.r][res.c] = res.ele);
-                done += chunk.length;
-                fill.style.width = `${Math.round((done / points.length) * 100)}%`;
-                log.textContent = `取得中: ${done}/${points.length} 地点`;
-            }
-
-            await getDBData('readwrite', STORE_NAME, 'put', { areaId: `custom_${pref}_${cityIdx}`, areaName: targetCity.name, bounds: b, elevations });
-            log.su            <button id="installAppBtn" class="primary-btn">📲 ホーム画面に追加する</button>
-            <div style="background: var(--bg); border-radius: 12px; padding: 12px; font-size: 0.78rem; text-align: left; border: 1px solid var(--border); width: 100%;">
-                <b>💡 ヒント：</b><br>
-                • iPhone: 共有「⇧」➔ ホーム画面に追加<br>
-                • Android: メニュー「⋮」➔ アプリをインストール
-            </div>
-        </div>
-    </div>
-
-    <!-- Main Content -->
-    <div class="container">
-        <header class="header">
-            <div>
-                <h1 class="app-title">Tateshina Compass</h1>
-                <p class="app-subtitle">信州蓼科 標高ナビゲーター</p>
-            </div>
-            <button id="openDlModalBtn" class="icon-btn" title="オフラインデータ管理">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
-            </button>
-        </header>
-
-        <main class="card">
-            <div class="mountain-container">
-                <svg class="mountain-svg" viewBox="0 0 300 140" fill="none">
-                    <circle cx="210" cy="45" r="26" fill="#f2c5bb"/>
-                    <path d="M120 120L210 50L300 120H120Z" fill="#93b482"/>
-                    <path d="M10 120L135 25L260 120H10Z" fill="#4a7c36"/>
-                    <rect x="0" y="117" width="300" height="6" rx="3" fill="#2d2a26"/>
-                    <g transform="translate(0, -10)">
-                        <path d="M135 48C145 48 153 56 153 66C153 78 135 94 135 94C135 94 117 78 117 66C117 56 125 48 135 48Z" fill="#d96b43"/>
-                        <circle cx="135" cy="65" r="5" fill="#fdfbf7"/>
-                    </g>
-                </svg>
-            </div>
-
-            <div id="locationTag" class="location-tag">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
-                <span id="locationName">現在地を検索中...</span>
-            </div>
-
-            <div class="elevation-display">
-                <div class="elevation-label">標高 (海抜)</div>
-                <div class="elevation-value-wrapper">
-                    <span id="elevationPrefix" class="elevation-prefix" style="display:none;">約</span>
-                    <span id="elevationValue" class="elevation-value">----</span>
-                    <span class="elevation-unit">m</span>
-                </div>
-            </div>
-
-            <div class="oxygen-box">
-                <div class="oxygen-title">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c-5.33 4.55-8 8.48-8 11.8 0 4.98 3.8 8.2 8 8.2s8-3.22 8-8.2c0-3.32-2.67-7.25-8-11.8z"/></svg>
-                    <span>大気中実質酸素濃度</span>
-                </div>
-                <div id="oxygenValue" class="oxygen-value">--.- %</div>
-            </div>
-
-            <div class="coords-box">
-                <div class="coord-item"><span class="coord-label">北緯 (LAT)</span><span id="latValue" class="coord-val">--.----</span></div>
-                <div style="width:1px; height:20px; background:var(--border);"></div>
-                <div class="coord-item"><span class="coord-label">東経 (LON)</span><span id="lonValue" class="coord-val">---.----</span></div>
-            </div>
-
-            <button id="updateBtn" class="primary-btn">現在地を更新する</button>
-            <div id="statusMsg" class="status-msg"></div>
-        </main>
-
-        <div class="version-badge">COPECK Version Beta 0.1.3 (Hyper Turbo)</div>
-    </div>
-
-    <!-- Download Modal -->
-    <div id="dlModal" class="modal-overlay">
-        <div class="modal-card">
-            <div class="modal-header">
-                <h3>オフラインデータ管理</h3>
-                <button id="closeDlModalBtn" class="close-btn">&times;</button>
-            </div>
-            
-            <div id="areaList" class="area-list"></div>
-
-            <!-- GitHub Bounds Fetch Pulldown Section -->
-            <div class="gen-section">
-                <div style="font-size: 0.85rem; font-weight: 800;">🗺️ 関東甲信越から選択して追加</div>
-                <select id="prefSelect" class="form-select">
-                    <option value="">都道府県を選択...</option>
-                    <option value="nagano">長野県</option>
-                    <option value="yamanashi">山梨県</option>
-                    <option value="gunma">群馬県</option>
-                    <option value="tochigi">栃木県</option>
-                    <option value="niigata">新潟県</option>
-                    <option value="saitama">埼玉県</option>
-                    <option value="tokyo">東京都</option>
-                    <option value="kanagawa">神奈川県</option>
-                    <option value="chiba">千葉県</option>
-                    <option value="ibaraki">茨城県</option>
-                </select>
-
-                <select id="citySelect" class="form-select" disabled>
-                    <option value="">都道府県を先に選択...</option>
-                </select>
-                
-                <div id="progressContainer" class="progress-container">
-                    <div class="progress-bar-bg"><div id="progressBarFill" class="progress-bar-fill"></div></div>
-                    <div id="terminalLog" class="terminal-log">準備完了</div>
-                </div>
-
-                <button id="generateBtn" class="primary-btn" style="padding: 14px; font-size: 0.88rem;" disabled>ハイパーターボで一括取得</button>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        const DB_NAME = 'TateshinaCompassDB', DB_VERSION = 1, STORE_NAME = 'offline_grids';
-        let masterBoundsData = null;
-
-        function openDB() {
-            return new Promise((resolve, reject) => {
-                const req = indexedDB.open(DB_NAME, DB_VERSION);
-                req.onupgradeneeded = e => e.target.result.createObjectStore(STORE_NAME, { keyPath: 'areaId' });
-                req.onsuccess = () => resolve(req.result);
-                req.onerror = () => reject(req.error);
-            });
-        }
-
-        async function saveOfflineGrid(data) {
-            const db = await openDB();
-            return new Promise(resolve => {
-                const tx = db.transaction(STORE_NAME, 'readwrite');
-                tx.objectStore(STORE_NAME).put(data);
-                tx.oncomplete = () => resolve();
-            });
-        }
-
-        async function deleteOfflineGrid(areaId) {
-            const db = await openDB();
-            return new Promise(resolve => {
-                const tx = db.transaction(STORE_NAME, 'readwrite');
-                tx.objectStore(STORE_NAME).delete(areaId);
-                tx.oncomplete = () => resolve();
-            });
-        }
-
-        async function getSavedGrids() {
-            const db = await openDB();
-            return new Promise(resolve => {
-                const req = db.transaction(STORE_NAME, 'readonly').objectStore(STORE_NAME).getAll();
-                req.onsuccess = () => resolve(req.result || []);
-                req.onerror = () => resolve([]);
-            });
-        }
-
-        const DEFAULT_AREAS = [
-            { id: 'chino', name: '茅野市エリア' }, { id: 'suwa', name: '諏訪市エリア' },
-            { id: 'haramura', name: '原村エリア' }, { id: 'karuizawa', name: '軽井沢町エリア' }
-        ];
-
-        function calculateOxygen(elevation) {
-            if (elevation <= 0) return 100.0;
-            return ((1013.25 * Math.pow((1 - (0.0065 * elevation) / 288.15), 5.2558)) / 1013.25 * 100).toFixed(1);
-        }
-
-        async function searchOffline(lat, lon) {
-            const grids = await getSavedGrids();
-            for (let area of grids) {
-                const b = area.bounds;
-                if (lat >= b.minLat && lat <= b.maxLat && lon >= b.minLon && lon <= b.maxLon) {
-                    const r = Math.round((lat - b.minLat) / 0.004);
-                    const c = Math.round((lon - b.minLon) / 0.004);
-                    if (area.elevations[r] && area.elevations[r][c] !== undefined) {
-                        return { elevation: area.elevations[r][c], areaName: area.areaName };
-                    }
-                }
-            }
-            return null;
-        }
-
-        const $ = id => document.getElementById(id);
-
-        function requestLocation() {
-            if (!navigator.geolocation) return;
-            $('statusMsg').textContent = 'GPS測位中...';
-            navigator.geolocation.getCurrentPosition(async pos => {
-                const { latitude: lat, longitude: lon } = pos.coords;
-                $('latValue').textContent = lat.toFixed(4);
-                $('lonValue').textContent = lon.toFixed(4);
-
-                if (navigator.onLine) {
-                    try {
-                        const res = await fetch(`https://cyberjapandata2.gsi.go.jp/general/dem/scripts/getelevation.php?lon=${lon}&lat=${lat}&outtype=JSON`);
-                        const data = await res.json();
-                        if (data && data.elevation !== "-----") {
-                            const ele = Math.round(parseFloat(data.elevation));
-                            animateElevation(ele);
-                            displayResult(ele, '現在地', false);
-                            $('statusMsg').textContent = '国土地理院APIから取得完了';
-                            return;
-                        }
-                    } catch (e) {}
-                }
-
-                const offline = await searchOffline(lat, lon);
-                if (offline) {
-                    animateElevation(offline.elevation);
-                    displayResult(offline.elevation, offline.areaName, true);
-                    $('statusMsg').textContent = `オフラインデータ（${offline.areaName}）表示中`;
-                } else {
-                    $('statusMsg').textContent = '対応エリア外です。データを追加してください。';
-                }
-            });
-        }
-
-        function displayResult(ele, name, isOffline) {
-                    <button id="installAppBtn" class="primary-btn">📲 ホーム画面に追加する</button>
-            <div style="background: var(--bg); border-radius: 12px; padding: 12px; font-size: 0.78rem; text-align: left; border: 1px solid var(--border); width: 100%;">
-                <b>💡 ヒント：</b><br>
-                • iPhone: 共有「⇧」➔ ホーム画面に追加<br>
-                • Android: メニュー「⋮」➔ アプリをインストール
-            </div>
-        </div>
-    </div>
-
-    <!-- Main Content -->
-    <div class="container">
-        <header class="header">
-            <div>
-                <h1 class="app-title">Tateshina Compass</h1>
-                <p class="app-subtitle">信州蓼科 標高ナビゲーター</p>
-            </div>
-            <button id="openDlModalBtn" class="icon-btn" title="オフラインデータ管理">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
-            </button>
-        </header>
-
-        <main class="card">
-            <div class="mountain-container">
-                <svg class="mountain-svg" viewBox="0 0 300 140" fill="none">
-                    <circle cx="210" cy="45" r="26" fill="#f2c5bb"/>
-                    <path d="M120 120L210 50L300 120H120Z" fill="#93b482"/>
-                    <path d="M10 120L135 25L260 120H10Z" fill="#4a7c36"/>
-                    <rect x="0" y="117" width="300" height="6" rx="3" fill="#2d2a26"/>
-                    <g transform="translate(0, -10)">
-                        <path d="M135 48C145 48 153 56 153 66C153 78 135 94 135 94C135 94 117 78 117 66C117 56 125 48 135 48Z" fill="#d96b43"/>
-                        <circle cx="135" cy="65" r="5" fill="#fdfbf7"/>
-                    </g>
-                </svg>
-            </div>
-
-            <div id="locationTag" class="location-tag">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
-                <span id="locationName">現在地を検索中...</span>
-            </div>
-
-            <div class="elevation-display">
-                <div class="elevation-label">標高 (海抜)</div>
-                <div class="elevation-value-wrapper">
-                    <span id="elevationPrefix" class="elevation-prefix" style="display:none;">約</span>
-                    <span id="elevationValue" class="elevation-value">----</span>
-                    <span class="elevation-unit">m</span>
-                </div>
-            </div>
-
-            <div class="oxygen-box">
-                <div class="oxygen-title">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c-5.33 4.55-8 8.48-8 11.8 0 4.98 3.8 8.2 8 8.2s8-3.22 8-8.2c0-3.32-2.67-7.25-8-11.8z"/></svg>
-                    <span>大気中実質酸素濃度</span>
-                </div>
-                <div id="oxygenValue" class="oxygen-value">--.- %</div>
-            </div>
-
-            <div class="coords-box">
-                <div class="coord-item"><span class="coord-label">北緯 (LAT)</span><span id="latValue" class="coord-val">--.----</span></div>
-                <div style="width:1px; height:20px; background:var(--border);"></div>
-                <div class="coord-item"><span class="coord-label">東経 (LON)</span><span id="lonValue" class="coord-val">---.----</span></div>
-            </div>
-
-            <button id="updateBtn" class="primary-btn">現在地を更新する</button>
-            <div id="statusMsg" class="status-msg"></div>
-        </main>
-
-        <div class="version-badge">COPECK Version Beta 0.1.3</div>
-    </div>
-
-    <!-- Download Modal -->
-    <div id="dlModal" class="modal-overlay">
-        <div class="modal-card">
-            <div class="modal-header">
-                <h3>オフラインデータ管理</h3>
-                <button id="closeDlModalBtn" class="close-btn">&times;</button>
-            </div>
-            
-            <div id="areaList" class="area-list"></div>
-
-            <!-- GitHub Bounds Fetch Pulldown Section -->
-            <div class="gen-section">
-                <div style="font-size: 0.85rem; font-weight: 800;">🗺️ 関東甲信越から選択して追加</div>
-                <select id="prefSelect" class="form-select">
-                    <option value="">都道府県を選択...</option>
-                    <option value="nagano">長野県</option>
-                    <option value="yamanashi">山梨県</option>
-                    <option value="gunma">群馬県</option>
-                    <option value="tochigi">栃木県</option>
-                    <option value="niigata">新潟県</option>
-                    <option value="saitama">埼玉県</option>
-                    <option value="tokyo">東京都</option>
-                    <option value="kanagawa">神奈川県</option>
-                    <option value="chiba">千葉県</option>
-                    <option value="ibaraki">茨城県</option>
-                </select>
-
-                <select id="citySelect" class="form-select" disabled>
-                    <option value="">都道府県を先に選択...</option>
-                </select>
-                
-                <div id="progressContainer" class="progress-container">
-                    <div class="progress-bar-bg"><div id="progressBarFill" class="progress-bar-fill"></div></div>
-                    <div id="terminalLog" class="terminal-log">準備完了</div>
-                </div>
-
-                <button id="generateBtn" class="primary-btn" style="padding: 14px; font-size: 0.88rem;" disabled>選択市町村を超高速ターボ取得</button>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        const DB_NAME = 'TateshinaCompassDB', DB_VERSION = 1, STORE_NAME = 'offline_grids';
-        let masterBoundsData = null;
-
-        function openDB() {
-            return new Promise((resolve, reject) => {
-                const req = indexedDB.open(DB_NAME, DB_VERSION);
-                req.onupgradeneeded = e => e.target.result.createObjectStore(STORE_NAME, { keyPath: 'areaId' });
-                req.onsuccess = () => resolve(req.result);
-                req.onerror = () => reject(req.error);
-            });
-        }
-
-        async function saveOfflineGrid(data) {
-            const db = await openDB();
-            return new Promise(resolve => {
-                const tx = db.transaction(STORE_NAME, 'readwrite');
-                tx.objectStore(STORE_NAME).put(data);
-                tx.oncomplete = () => resolve();
-            });
-        }
-
-        async function deleteOfflineGrid(areaId) {
-            const db = await openDB();
-            return new Promise(resolve => {
-                const tx = db.transaction(STORE_NAME, 'readwrite');
-                tx.objectStore(STORE_NAME).delete(areaId);
-                tx.oncomplete = () => resolve();
-            });
-        }
-
-        async function getSavedGrids() {
-            const db = await openDB();
-            return new Promise(resolve => {
-                const req = db.transaction(STORE_NAME, 'readonly').objectStore(STORE_NAME).getAll();
-                req.onsuccess = () => resolve(req.result || []);
-                req.onerror = () => resolve([]);
-            });
-        }
-
-        const DEFAULT_AREAS = [
-            { id: 'chino', name: '茅野市エリア' }, { id: 'suwa', name: '諏訪市エリア' },
-            { id: 'haramura', name: '原村エリア' }, { id: 'karuizawa', name: '軽井沢町エリア' }
-        ];
-
-        function calculateOxygen(elevation) {
-            if (elevation <= 0) return 100.0;
-            return ((1013.25 * Math.pow((1 - (0.0065 * elevation) / 288.15), 5.2558)) / 1013.25 * 100).toFixed(1);
-        }
-
-        async function searchOffline(lat, lon) {
-            const grids = await getSavedGrids();
-            for (let area of grids) {
-                const b = area.bounds;
-                if (lat >= b.minLat && lat <= b.maxLat && lon >= b.minLon && lon <= b.maxLon) {
-                    const r = Math.round((lat - b.minLat) / 0.004);
-                    const c = Math.round((lon - b.minLon) / 0.004);
-                    if (area.elevations[r] && area.elevations[r][c] !== undefined) {
-                        return { elevation: area.elevations[r][c], areaName: area.areaName };
-                    }
-                }
-            }
-            return null;
-        }
-
-        const $ = id => document.getElementById(id);
-
-        function requestLocation() {
-            if (!navigator.geolocation) return;
-            $('statusMsg').textContent = 'GPS測位中...';
-            navigator.geolocation.getCurrentPosition(async pos => {
-                const { latitude: lat, longitude: lon } = pos.coords;
-                $('latValue').textContent = lat.toFixed(4);
-                $('lonValue').textContent = lon.toFixed(4);
-
-                if (navigator.onLine) {
-                    try {
-                        const res = await fetch(`https://cyberjapandata2.gsi.go.jp/general/dem/scripts/getelevation.php?lon=${lon}&lat=${lat}&outtype=JSON`);
-                        const data = await res.json();
-                        if (data && data.elevation !== "-----") {
-                            const ele = Math.round(parseFloat(data.elevation));
-                            animateElevation(ele);
-                            displayResult(ele, '現在地', false);
-                            $('statusMsg').textContent = '国土地理院APIから取得完了';
-                            return;
-                        }
-                    } catch (e) {}
-                }
-
-                const offline = await searchOffline(lat, lon);
-                if (offline) {
-                    animateElevation(offline.elevation);
-                    displayResult(offline.elevation, offline.areaName, true);
-                    $('statusMsg').textContent = `オフラインデータ（${offline.areaName}）表示中`;
-                } else {
-                    $('statusMsg').textContent = '対応エリア外です。データを追加してください。';
-                }
-            });
-        }
-
-        function displayResult(ele, name, isOffline) {
-            $('elevationPrefix').style.display = isOffline ? 'inline' : 'none';
-            $('oxygenValue').textContent = `${calculateOxygen(ele)} %`;
-            $('locationName').textContent = name;
-            $('locationTag').classList.toggle('is-offline', isOffline);
-        }
-
-        function animateElevation(target) {
-            const start = parseFloat($('elevationValue').textContent) || 0;
-            const duration = 1000;
-            const startTime = performance.now();
-            function update(time) {
-                const elapsed = time - startTime;
-                const progress = Math.min(elapsed / duration, 1);
-                const ease = 1 - Math.pow(1 - progress, 3);
-                const current = start + (target - start) * ease;
-                $('elevationValue').textContent = Math.round(current).toLocaleString();
-                if (progress < 1) requestAnimationFrame(update);
-            }
-            requestAnimationFrame(update);
-        }
-
-        // GitHub上の kantou_koushinetsu_bounds.json をフェッチ
-        async function loadMasterBounds() {
-            if (masterBoundsData) return masterBoundsData;
-            try {
-                const res = await fetch('./data/kantou_koushinetsu_bounds.json');
-                masterBoundsData = await res.json();
-                return masterBoundsData;
-            } catch(e) {
-                alert('境界マスタの取得に失敗しました。`./data/kantou_koushinetsu_bounds.json` を配置してください。');
-                return null;
-            }
-        }
-
-        $('prefSelect').addEventListener('change', async (e) => {
-            const pref = e.target.value;
-            const citySel = $('citySelect');
-            citySel.innerHTML = '<option value="">読み込み中...</option>';
-            
-            if (pref) {
-                const master = await loadMasterBounds();
-                citySel.innerHTML = '<option value="">市区町村を選択...</option>';
-                if (master && master[pref]) {
-                    citySel.disabled = false;
-                    master[pref].forEach((city, idx) => {
-                        citySel.innerHTML += `<option value="${idx}">${city.name}</option>`;
-                    });
-                }
-            } else {
-                citySel.innerHTML = '<option value="">都道府県を先に選択...</option>';
-                citySel.disabled = true;
-                $('generateBtn').disabled = true;
-            }
         });
 
-        $('citySelect').addEventListener('change', (e) => {
-            $('generateBtn').disabled = (e.target.value === "");
-        });
-
-        // 20並列ターボ取得ロジック
-        $('generateBtn').addEventListener('click', async () => {
-            const pref = $('prefSelect').value;
-            const cityIdx = $('citySelect').value;
-            if (!pref || cityIdx === "" || !masterBoundsData) return;
-
-            const targetCity = masterBoundsData[pref][parseInt(cityIdx, 10)];
-            const bounds = targetCity.bounds;
-
-            $('generateBtn').disabled = true;
-            $('progressContainer').style.display = 'flex';
-            const log = $('terminalLog'), fill = $('progressBarFill');
-            log.textContent = `[INFO] 「${targetCity.name}」の安全枠境界を取得しました。`;
-            fill.style.width = '15%';
-
-            try {
-                const MESH = 0.004; // 400mメッシュ刻み
-                let lats = [], lons = [];
-                for (let lat = bounds.minLat; lat <= bounds.maxLat; lat += MESH) lats.push(lat);
-                for (let lon = bounds.minLon; lon <= bounds.maxLon; lon += MESH) lons.push(lon);
-
-                let elevations = [];
-                let totalRows = lats.length, completedRows = 0;
-
-                log.textContent = `[TURBO] 国土地理院APIより超高速並列取得を開始 (${totalRows} 行)...`;
-
-                for (let lat of lats) {
-                    let rowPromises = lons.map(async lon => {
-                        try {
-                            const res = await fetch(`https://cyberjapandata2.gsi.go.jp/general/dem/scripts/getelevation.php?lon=${lon.toFixed(4)}&lat=${lat.toFixed(4)}&outtype=JSON`);
-                            const d = await res.json();
-                            return (d && d.elevation !== "-----") ? Math.round(parseFloat(d.elevation)) : 0;
-                        } catch(e) { return 0; }
-                    });
-                    
-                    let rowResult = await Promise.all(rowPromises);
-                    elevations.push(rowResult);
-                    completedRows++;
-                    
-                    let percent = 15 + Math.round((completedRows / totalRows) * 80);
-                    fill.style.width = `${percent}%`;
-                    log.textContent = `[TURBO] 取得中: ${completedRows} / ${totalRows} 行完了`;
-                }
-
-                const areaId = `custom_${pref}_${cityIdx}_${Date.now()}`;
-                await saveOfflineGrid({ areaId, areaName: targetCity.name, bounds, elevations });
-
-                fill.style.width = '100%';
-                log.textContent = `[SUCCESS] 「${targetCity.name}」のオフラインデータを保存しました！`;
-                
-                $('prefSelect').value = "";
-                $('citySelect').innerHTML = '<option value="">都道府県を先に選択...</option>';
-                $('citySelect').disabled = true;
-                $('generateBtn').disabled = true;
-
-                await renderAreaList();
-            } catch (e) {
-                log.textContent = `[ERROR] ${e.message || '取得失敗'}`;
-            } finally {
-                $('generateBtn').disabled = false;
-            }
-        });
-
-        async function renderAreaList() {
-            const saved = await getSavedGrids();
-            const savedIds = saved.map(s => s.areaId);
-            const areaListEl = $('areaList');
-            areaListEl.innerHTML = '';
-
-            for (let area of DEFAULT_AREAS) {
-                const isDl = savedIds.includes(area.id);
-                areaListEl.innerHTML += `
-                    <div class="area-item">
-                        <span>${area.name}</span>
-                        <div class="area-actions">
-                            <button class="dl-btn ${isDl ? 'downloaded' : ''}" onclick="downloadPreset('${area.id}')">${isDl ? '保存済' : '保存'}</button>
-                            ${isDl ? `<button class="del-btn" onclick="removeArea('${area.id}')">×</button>` : ''}
-                        </div>
-                    </div>`;
-            }
-
-            for (let area of saved) {
-                if (!DEFAULT_AREAS.some(d => d.id === area.areaId)) {
-                    areaListEl.innerHTML += `
-                        <div class="area-item">
-                            <span>${area.areaName}</span>
-                            <div class="area-actions">
-                                <button class="dl-btn downloaded">保存済</button>
-                                <button class="del-btn" onclick="removeArea('${area.areaId}')">×</button>
-                            </div>
-                        </div>`;
-                }
-            }
-        }
-
-        async function downloadPreset(id) {
-            try {
-                const res = await fetch(`./data/${id}.json`);
-                const json = await res.json();
-                await saveOfflineGrid(json);
-                renderAreaList();
-            } catch(e) { alert('プリセットの保存に失敗しました'); }
-        }
-
-        window.removeArea = async function(areaId) {
-            if (confirm('この保存データを削除しますか？')) {
-                await deleteOfflineGrid(areaId);
-                await renderAreaList();
-            }
-        };
-
-        function checkPWA() {
-            const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-            $('browserLanding').style.display = isPWA ? 'none' : 'flex';
-        }
-
-        $('openDlModalBtn').onclick = () => { renderAreaList(); $('dlModal').classList.add('active'); };
-        $('closeDlModalBtn').onclick = () => $('dlModal').classList.remove('active');
-        $('updateBtn').onclick = requestLocation;
-
-        window.onload = () => { checkPWA(); requestLocation(); };
-    </script>
-</body>
-</html>
-
+        $('citySelect').addEventLi
