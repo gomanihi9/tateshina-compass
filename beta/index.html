@@ -14,7 +14,7 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,700;0,800;0,900;1,800&family=Zen+Kaku+Gothic+New:wght@700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800;900&family=Zen+Kaku+Gothic+New:wght@700;900&display=swap" rel="stylesheet">
     
     <style>
         :root {
@@ -27,29 +27,27 @@
         body { font-family: 'Plus Jakarta Sans', 'Zen Kaku Gothic New', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px 16px; }
         .container { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 16px; }
         .header { display: flex; justify-content: space-between; align-items: center; padding: 0 4px; }
-        .app-title { font-size: 1.8rem; font-weight: 900; text-transform: uppercase; line-height: 1; letter-spacing: -0.03em; }
-        .app-subtitle { font-size: 0.8rem; font-weight: 600; color: var(--sub); margin-top: 4px; letter-spacing: 0.05em; }
+        .app-title { font-size: 1.8rem; font-weight: 900; text-transform: uppercase; line-height: 1; }
+        .app-subtitle { font-size: 0.8rem; font-weight: 600; color: var(--sub); margin-top: 4px; }
         
-        .icon-btn { background: var(--card); border: 1px solid var(--border); border-radius: 50%; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.04); transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1); }
-        .icon-btn:active { transform: scale(0.86); }
+        .icon-btn { background: var(--card); border: 1px solid var(--border); border-radius: 50%; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.04); }
+        .icon-btn:active { transform: scale(0.9); }
         
-        .card { background: var(--card); border-radius: var(--radius-lg); padding: 28px 24px; box-shadow: 0 16px 40px rgba(45,42,38,0.08); display: flex; flex-direction: column; align-items: center; border: 1px solid rgba(255,255,255,0.9); position: relative; overflow: hidden; }
-        
+        .card { background: var(--card); border-radius: var(--radius-lg); padding: 28px 24px; box-shadow: 0 16px 40px rgba(45,42,38,0.08); display: flex; flex-direction: column; align-items: center; border: 1px solid rgba(255,255,255,0.9); }
         .mountain-container { width: 100%; height: 130px; margin-bottom: 8px; display: flex; justify-content: center; align-items: center; }
-        .mountain-svg { width: 100%; height: 100%; max-height: 120px; transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
-        .card:hover .mountain-svg { transform: translateY(-4px) scale(1.02); }
+        .mountain-svg { width: 100%; height: 100%; max-height: 120px; }
         
-        .location-tag { background: var(--accent-light); color: var(--accent); padding: 6px 16px; border-radius: 20px; font-size: 0.8rem; font-weight: 800; margin-bottom: 12px; display: inline-flex; align-items: center; gap: 6px; transition: all 0.3s ease; }
+        .location-tag { background: var(--accent-light); color: var(--accent); padding: 6px 16px; border-radius: 20px; font-size: 0.8rem; font-weight: 800; margin-bottom: 12px; display: inline-flex; align-items: center; gap: 6px; }
         .location-tag.is-offline { background: var(--offline-bg); color: #8c7355; }
         
         .elevation-display { text-align: center; margin: 4px 0 16px 0; }
         .elevation-label { font-size: 0.8rem; font-weight: 700; color: var(--sub); letter-spacing: 0.1em; text-transform: uppercase; }
         .elevation-value-wrapper { display: flex; align-items: baseline; justify-content: center; gap: 4px; }
-        .elevation-prefix { font-size: 1.5rem; font-weight: 800; color: var(--sub); opacity: 0.8; }
-        .elevation-value { font-size: 4.2rem; font-weight: 900; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -0.04em; }
+        .elevation-prefix { font-size: 1.5rem; font-weight: 800; color: var(--sub); }
+        .elevation-value { font-size: 4.2rem; font-weight: 900; line-height: 1; font-variant-numeric: tabular-nums; }
         .elevation-unit { font-size: 1.5rem; font-weight: 800; color: var(--accent); }
         
-        .oxygen-box { background: linear-gradient(135deg, #eef7ff, #e3f2fd); border: 1px solid #c5e1a5; border-radius: var(--radius-md); padding: 10px 16px; width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; box-shadow: inset 0 2px 4px rgba(255,255,255,0.6); }
+        .oxygen-box { background: linear-gradient(135deg, #eef7ff, #e3f2fd); border: 1px solid #c5e1a5; border-radius: var(--radius-md); padding: 10px 16px; width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
         .oxygen-title { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; font-weight: 800; color: #2e7d32; }
         .oxygen-value { font-size: 1.1rem; font-weight: 900; color: #1b5e20; }
         
@@ -58,55 +56,287 @@
         .coord-label { font-size: 0.68rem; font-weight: 700; color: var(--sub); }
         .coord-val { font-size: 0.9rem; font-weight: 700; margin-top: 2px; }
         
-        .primary-btn { background: var(--accent); color: #fff; border: none; border-radius: var(--radius-md); width: 100%; padding: 16px; font-size: 1rem; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 8px 20px rgba(217,107,67,0.3); transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1); }
-        .primary-btn:active { transform: scale(0.95); background: var(--accent-hover); box-shadow: 0 4px 10px rgba(217,107,67,0.2); }
-        .primary-btn:disabled { background: #ccbdaf; box-shadow: none; cursor: not-allowed; transform: none; }
+        .primary-btn { background: var(--accent); color: #fff; border: none; border-radius: var(--radius-md); width: 100%; padding: 16px; font-size: 1rem; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 8px 20px rgba(217,107,67,0.3); }
+        .primary-btn:active { transform: scale(0.96); background: var(--accent-hover); }
+        .primary-btn:disabled { background: #ccbdaf; box-shadow: none; cursor: not-allowed; }
         
         .status-msg { font-size: 0.8rem; font-weight: 700; margin-top: 12px; text-align: center; color: var(--accent); min-height: 1.2em; }
-        .version-badge { font-size: 0.7rem; font-weight: 700; color: #b0a89e; text-align: center; margin-top: 12px; letter-spacing: 0.05em; }
+        .version-badge { font-size: 0.7rem; font-weight: 700; color: #b0a89e; text-align: center; margin-top: 12px; }
         
-        /* Modal & Progress Styles */
-        .modal-overlay { position: fixed; inset: 0; background: rgba(45,42,38,0.5); backdrop-filter: blur(6px); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 16px; opacity: 0; transition: opacity 0.3s ease; }
-        .modal-overlay.active { display: flex; opacity: 1; }
-        .modal-card { background: var(--card); border-radius: var(--radius-lg); width: 100%; max-width: 380px; padding: 24px; display: flex; flex-direction: column; gap: 14px; max-height: 85vh; overflow-y: auto; box-shadow: 0 24px 48px rgba(0,0,0,0.15); transform: translateY(10px); transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
-        .modal-overlay.active .modal-card { transform: translateY(0); }
+        /* Modal & Progress */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(45,42,38,0.5); backdrop-filter: blur(6px); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 16px; }
+        .modal-overlay.active { display: flex; }
+        .modal-card { background: var(--card); border-radius: var(--radius-lg); width: 100%; max-width: 380px; padding: 24px; display: flex; flex-direction: column; gap: 14px; max-height: 85vh; overflow-y: auto; box-shadow: 0 24px 48px rgba(0,0,0,0.15); }
         .modal-header { display: flex; justify-content: space-between; align-items: center; font-weight: 900; }
-        .close-btn { background: none; border: none; font-size: 1.5rem; color: var(--sub); cursor: pointer; transition: transform 0.2s; }
-        .close-btn:active { transform: scale(0.8); }
+        .close-btn { background: none; border: none; font-size: 1.5rem; color: var(--sub); cursor: pointer; }
         
-        .area-list { display: flex; flex-direction: column; gap: 8px; max-height: 180px; overflow-y: auto; }
+        .area-list { display: flex; flex-direction: column; gap: 8px; max-height: 160px; overflow-y: auto; }
         .area-item { background: var(--bg); border-radius: var(--radius-md); padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border); }
-        .area-actions { display: flex; gap: 6px; align-items: center; }
-        
-        .dl-btn { background: var(--accent); color: #fff; border: none; border-radius: 20px; padding: 6px 12px; font-size: 0.75rem; font-weight: 800; cursor: pointer; transition: transform 0.2s; }
-        .dl-btn:active { transform: scale(0.92); }
+        .dl-btn { background: var(--accent); color: #fff; border: none; border-radius: 20px; padding: 6px 12px; font-size: 0.75rem; font-weight: 800; cursor: pointer; }
         .dl-btn.downloaded { background: #81c784; cursor: default; }
-        .del-btn { background: #ffcdd2; color: #c62828; border: none; border-radius: 50%; width: 28px; height: 28px; font-size: 0.85rem; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform 0.2s; }
-        .del-btn:active { transform: scale(0.88); }
+        .del-btn { background: #ffcdd2; color: #c62828; border: none; border-radius: 50%; width: 26px; height: 26px; font-size: 0.8rem; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 
-        .gen-section { border-top: 1px solid var(--border); padding-top: 12px; display: flex; flex-direction: column; gap: 10px; }
-        .form-select { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); font-size: 0.9rem; outline: none; font-weight: 700; color: var(--text); }
-        
-        /* Turbo Terminal & Progress Bar */
-        .progress-container { display: none; flex-direction: column; gap: 6px; width: 100%; }
+        .form-select { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); font-size: 0.9rem; font-weight: 700; outline: none; margin-bottom: 8px; }
+        .progress-container { display: none; flex-direction: column; gap: 6px; width: 100%; margin-top: 8px; }
         .progress-bar-bg { width: 100%; height: 8px; background: var(--bg); border-radius: 4px; overflow: hidden; border: 1px solid var(--border); }
-        .progress-bar-fill { width: 0%; height: 100%; background: linear-gradient(90deg, #d96b43, #ff8a65); transition: width 0.15s ease; border-radius: 4px; }
-        .terminal-log { background: #1e1b18; color: #a9dc76; font-family: monospace; font-size: 0.7rem; padding: 8px 10px; border-radius: 8px; max-height: 60px; overflow-y: auto; line-height: 1.4; }
+        .progress-bar-fill { width: 0%; height: 100%; background: var(--accent); transition: width 0.2s; }
+        .terminal-log { background: #1e1b18; color: #a9dc76; font-family: monospace; font-size: 0.7rem; padding: 8px; border-radius: 6px; }
 
         #browserLanding { position: fixed; inset: 0; background: var(--bg); z-index: 2000; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 24px; text-align: center; }
     </style>
 </head>
 <body>
 
-    <!-- Browser Guard Landing -->
     <div id="browserLanding">
-        <div class="modal-card" style="align-items: center; text-align: center; gap: 18px; max-width: 380px;">
-            <div style="width: 64px; height: 64px; background: var(--accent-light); border-radius: 20px; display: flex; align-items: center; justify-content: center; color: var(--accent);">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
-            </div>
-            <h2 style="font-size: 1.2rem; font-weight: 900;">Tateshina Compass へようこそ</h2>
+        <div class="modal-card" style="align-items: center; text-align: center; gap: 16px;">
+            <h2>Tateshina Compass へようこそ</h2>
             <p style="font-size: 0.85rem; color: var(--sub);">ホーム画面に追加して専用アプリとして起動すると、オフラインでも快適に動作します。</p>
             <button id="installAppBtn" class="primary-btn">📲 ホーム画面に追加する</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <header class="header">
+            <div>
+                <h1 class="app-title">Tateshina Compass</h1>
+                <p class="app-subtitle">信州蓼科 標高ナビゲーター</p>
+            </div>
+            <button id="openDlModalBtn" class="icon-btn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+            </button>
+        </header>
+
+        <main class="card">
+            <div class="mountain-container">
+                <svg class="mountain-svg" viewBox="0 0 300 140" fill="none">
+                    <circle cx="210" cy="45" r="26" fill="#f2c5bb"/>
+                    <path d="M120 120L210 50L300 120H120Z" fill="#93b482"/>
+                    <path d="M10 120L135 25L260 120H10Z" fill="#4a7c36"/>
+                    <rect x="0" y="117" width="300" height="6" rx="3" fill="#2d2a26"/>
+                    <path d="M135 48C145 48 153 56 153 66C153 78 135 94 135 94C135 94 117 78 117 66C117 56 125 48 135 48Z" fill="#d96b43"/>
+                    <circle cx="135" cy="65" r="5" fill="#fdfbf7"/>
+                </svg>
+            </div>
+
+            <div id="locationTag" class="location-tag">現在地を検索中...</div>
+
+            <div class="elevation-display">
+                <div class="elevation-label">標高 (海抜)</div>
+                <div class="elevation-value-wrapper">
+                    <span id="elevationPrefix" class="elevation-prefix" style="display:none;">約</span>
+                    <span id="elevationValue" class="elevation-value">----</span>
+                    <span class="elevation-unit">m</span>
+                </div>
+            </div>
+
+            <div class="oxygen-box">
+                <div class="oxygen-title">大気中実質酸素濃度</div>
+                <div id="oxygenValue" class="oxygen-value">--.- %</div>
+            </div>
+
+            <div class="coords-box">
+                <div class="coord-item"><span class="coord-label">北緯</span><span id="latValue" class="coord-val">--.----</span></div>
+                <div style="width:1px; height:20px; background:var(--border);"></div>
+                <div class="coord-item"><span class="coord-label">東経</span><span id="lonValue" class="coord-val">---.----</span></div>
+            </div>
+
+            <button id="updateBtn" class="primary-btn">現在地を更新する</button>
+            <div id="statusMsg" class="status-msg"></div>
+        </main>
+
+        <div class="version-badge">COPECK Beta 0.1.3</div>
+    </div>
+
+    <!-- Modal -->
+    <div id="dlModal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>オフラインデータ管理</h3>
+                <button id="closeDlModalBtn" class="close-btn">&times;</button>
+            </div>
+            
+            <div id="areaList" class="area-list"></div>
+
+            <div style="border-top:1px solid var(--border); padding-top:12px;">
+                <div style="font-size:0.82rem; font-weight:800; margin-bottom:8px;">🗺️ 新エリアを追加</div>
+                <select id="prefSelect" class="form-select">
+                    <option value="">都道府県を選択...</option>
+                    <option value="nagano">長野県</option>
+                    <option value="yamanashi">山梨県</option>
+                    <option value="gunma">群馬県</option>
+                    <option value="tochigi">栃木県</option>
+                    <option value="niigata">新潟県</option>
+                    <option value="saitama">埼玉県</option>
+                    <option value="tokyo">東京都</option>
+                    <option value="kanagawa">神奈川県</option>
+                    <option value="chiba">千葉県</option>
+                    <option value="ibaraki">茨城県</option>
+                </select>
+
+                <select id="citySelect" class="form-select" disabled>
+                    <option value="">都道府県を先に選択...</option>
+                </select>
+                
+                <div id="progressContainer" class="progress-container">
+                    <div class="progress-bar-bg"><div id="progressBarFill" class="progress-bar-fill"></div></div>
+                    <div id="terminalLog" class="terminal-log">準備完了</div>
+                </div>
+
+                <button id="generateBtn" class="primary-btn" style="padding:12px; font-size:0.88rem; margin-top:6px;" disabled>超高速ターボで取得</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const DB_NAME = 'TateshinaCompassDB', DB_VERSION = 1, STORE_NAME = 'offline_grids';
+        let masterBounds = null;
+
+        function openDB() {
+            return new Promise((res, rej) => {
+                const req = indexedDB.open(DB_NAME, DB_VERSION);
+                req.onupgradeneeded = e => e.target.result.createObjectStore(STORE_NAME, { keyPath: 'areaId' });
+                req.onsuccess = () => res(req.result);
+                req.onerror = () => rej(req.error);
+            });
+        }
+
+        async function getDBData(mode, storeName, op, val) {
+            const db = await openDB();
+            return new Promise(res => {
+                const tx = db.transaction(storeName, mode);
+                const store = tx.objectStore(storeName);
+                const req = op === 'getAll' ? store.getAll() : op === 'put' ? store.put(val) : store.delete(val);
+                req.onsuccess = () => res(req.result);
+                req.onerror = () => res(null);
+            });
+        }
+
+        const $ = id => document.getElementById(id);
+
+        function requestLocation() {
+            if (!navigator.geolocation) return;
+            $('statusMsg').textContent = 'GPS測位中...';
+            navigator.geolocation.getCurrentPosition(async pos => {
+                const { latitude: lat, longitude: lon } = pos.coords;
+                $('latValue').textContent = lat.toFixed(4);
+                $('lonValue').textContent = lon.toFixed(4);
+
+                if (navigator.onLine) {
+                    try {
+                        const res = await fetch(`https://cyberjapandata2.gsi.go.jp/general/dem/scripts/getelevation.php?lon=${lon}&lat=${lat}&outtype=JSON`);
+                        const data = await res.json();
+                        if (data && data.elevation !== "-----") {
+                            const ele = Math.round(parseFloat(data.elevation));
+                            animateElevation(ele);
+                            displayResult(ele, '現在地', false);
+                            $('statusMsg').textContent = '国土地理院API取得完了';
+                            return;
+                        }
+                    } catch (e) {}
+                }
+
+                const offline = await searchOffline(lat, lon);
+                if (offline) {
+                    animateElevation(offline.elevation);
+                    displayResult(offline.elevation, offline.areaName, true);
+                    $('statusMsg').textContent = `オフライン（${offline.areaName}）`;
+                } else {
+                    $('statusMsg').textContent = '対応エリア外です。';
+                }
+            });
+        }
+
+        async function searchOffline(lat, lon) {
+            const grids = await getDBData('readonly', STORE_NAME, 'getAll');
+            for (let area of grids || []) {
+                const b = area.bounds;
+                if (lat >= b.minLat && lat <= b.maxLat && lon >= b.minLon && lon <= b.maxLon) {
+                    const r = Math.round((lat - b.minLat) / 0.004);
+                    const c = Math.round((lon - b.minLon) / 0.004);
+                    if (area.elevations[r] && area.elevations[r][c] !== undefined) {
+                        return { elevation: area.elevations[r][c], areaName: area.areaName };
+                    }
+                }
+            }
+            return null;
+        }
+
+        function displayResult(ele, name, isOffline) {
+            $('elevationPrefix').style.display = isOffline ? 'inline' : 'none';
+            $('oxygenValue').textContent = `${(1013.25 * Math.pow((1 - (0.0065 * ele) / 288.15), 5.2558) / 1013.25 * 100).toFixed(1)} %`;
+            $('locationName').textContent = name;
+            $('locationTag').classList.toggle('is-offline', isOffline);
+        }
+
+        function animateElevation(target) {
+            const start = parseFloat($('elevationValue').textContent) || 0;
+            const startTime = performance.now();
+            function update(time) {
+                const progress = Math.min((time - startTime) / 800, 1);
+                $('elevationValue').textContent = Math.round(start + (target - start) * (1 - Math.pow(1 - progress, 3))).toLocaleString();
+                if (progress < 1) requestAnimationFrame(update);
+            }
+            requestAnimationFrame(update);
+        }
+
+        // --- Pulldown & Generator ---
+        $('prefSelect').onchange = async e => {
+            const pref = e.target.value;
+            const citySel = $('citySelect');
+            citySel.innerHTML = '<option value="">読み込み中...</option>';
+            if (!pref) { citySel.disabled = true; $('generateBtn').disabled = true; return; }
+            
+            if (!masterBounds) {
+                const res = await fetch('./data/kantou_koushinetsu_bounds.json');
+                masterBounds = await res.json();
+            }
+            citySel.innerHTML = '<option value="">市区町村を選択...</option>';
+            if (masterBounds && masterBounds[pref]) {
+                citySel.disabled = false;
+                masterBounds[pref].forEach((c, i) => citySel.innerHTML += `<option value="${i}">${c.name}</option>`);
+            }
+        };
+
+        $('citySelect').onchange = e => $('generateBtn').disabled = (e.target.value === "");
+
+        $('generateBtn').onclick = async () => {
+            const pref = $('prefSelect').value, cityIdx = $('citySelect').value;
+            if (!pref || cityIdx === "") return;
+
+            const targetCity = masterBounds[pref][parseInt(cityIdx, 10)];
+            const b = targetCity.bounds;
+            $('generateBtn').disabled = true;
+            $('progressContainer').style.display = 'flex';
+            const log = $('terminalLog'), fill = $('progressBarFill');
+
+            const MESH = 0.004;
+            let lats = [], lons = [];
+            for (let lat = b.minLat; lat <= b.maxLat; lat += MESH) lats.push(lat);
+            for (let lon = b.minLon; lon <= b.maxLon; lon += MESH) lons.push(lon);
+
+            let points = [];
+            lats.forEach((lat, r) => lons.forEach((lon, c) => points.push({ r, c, lat, lon })));
+            
+            let elevations = Array(lats.length).fill(0).map(() => Array(lons.length).fill(0));
+            let done = 0;
+
+            for (let i = 0; i < points.length; i += 30) {
+                let chunk = points.slice(i, i + 30);
+                let results = await Promise.all(chunk.map(async p => {
+                    try {
+                        const res = await fetch(`https://cyberjapandata2.gsi.go.jp/general/dem/scripts/getelevation.php?lon=${p.lon.toFixed(4)}&lat=${p.lat.toFixed(4)}&outtype=JSON`);
+                        const d = await res.json();
+                        return { r: p.r, c: p.c, ele: (d && d.elevation !== "-----") ? Math.round(parseFloat(d.elevation)) : 0 };
+                    } catch(e) { return { r: p.r, c: p.c, ele: 0 }; }
+                }));
+                results.forEach(res => elevations[res.r][res.c] = res.ele);
+                done += chunk.length;
+                fill.style.width = `${Math.round((done / points.length) * 100)}%`;
+                log.textContent = `取得中: ${done}/${points.length} 地点`;
+            }
+
+            await getDBData('readwrite', STORE_NAME, 'put', { areaId: `custom_${pref}_${cityIdx}`, areaName: targetCity.name, bounds: b, elevations });
+            log.su            <button id="installAppBtn" class="primary-btn">📲 ホーム画面に追加する</button>
             <div style="background: var(--bg); border-radius: 12px; padding: 12px; font-size: 0.78rem; text-align: left; border: 1px solid var(--border); width: 100%;">
                 <b>💡 ヒント：</b><br>
                 • iPhone: 共有「⇧」➔ ホーム画面に追加<br>
