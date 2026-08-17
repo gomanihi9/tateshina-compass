@@ -1,4 +1,4 @@
-name: Deploy to GitHub Pages
+name: Super Fast Deploy to GitHub Pages
 
 on:
   push:
@@ -7,43 +7,58 @@ on:
       - beta
 
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
+
+# 🔴重要: 同じブランチでの連続プッシュ時は、古い処理を自動キャンセルして最新の処理を優先する（待ち時間削減）
+concurrency:
+  group: "pages-${{ github.ref_name }}"
+  cancel-in-progress: true
 
 jobs:
-  build-and-deploy:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # mainブランチの場合は、そのままルート階層にデプロイする準備
-      - name: Prepare files for main
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      # -----------------------------------------------------------------
+      # 💡 魔法のステップ: 常に「両方のURL」を生かすため、
+      # サーバー側の既存のデプロイ成果物（Artifact）をダウンロードして合体させる
+      # -----------------------------------------------------------------
+      - name: Download existing Pages artifact (if available)
+        uses: actions/download-artifact@v4
+        continue-on-error: true # 初回デプロイ時はエラーを無視する
+        with:
+          name: github-pages
+          path: ./_site
+
+      # mainブランチの場合：ルート階層のファイルを更新
+      - name: Organize for main
         if: github.ref_name == 'main'
         run: |
-          mkdir -p dist_main
-          rsync -av --exclude='dist_main' --exclude='.github' ./ dist_main/
+          mkdir -p _site
+          rsync -av --exclude='_site' --exclude='.github' ./ _site/
 
-      # betaブランチの場合は、betaというフォルダの中にデプロイする準備
-      - name: Prepare files for beta
+      # betaブランチの場合：betaフォルダの中身だけを更新
+      - name: Organize for beta
         if: github.ref_name == 'beta'
         run: |
-          mkdir -p dist_beta/beta
-          rsync -av --exclude='dist_beta' --exclude='.github' ./ dist_beta/beta/
+          mkdir -p _site/beta
+          rsync -av --exclude='_site' --exclude='.github' ./ _site/beta/
 
-      # mainブランチのデプロイ処理
-      - name: Deploy Main to gh-pages
-        if: github.ref_name == 'main'
-        uses: JamesIves/github-pages-deploy-action@v4
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          branch: gh-pages
-          folder: dist_main
-          clean: false # 🔴既存のbetaフォルダを絶対に消さない
+          path: './_site'
 
-      # betaブランチのデプロイ処理
-      - name: Deploy Beta to gh-pages
-        if: github.ref_name == 'beta'
-        uses: JamesIves/github-pages-deploy-action@v4
-        with:
-          branch: gh-pages
-          folder: dist_beta
-          clean: false # 🔴既存のmainのファイルを絶対に消さない
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
