@@ -1,4 +1,4 @@
-name: Super Fast Deploy to GitHub Pages
+name: Fast Shared Deploy
 
 on:
   push:
@@ -7,14 +7,13 @@ on:
       - beta
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
-# 🔴重要: 同じブランチでの連続プッシュ時は、古い処理を自動キャンセルして最新の処理を優先する（待ち時間削減）
 concurrency:
-  group: "pages-${{ github.ref_name }}"
-  cancel-in-progress: true
+  group: "pages"
+  cancel-in-progress: false # 🔴上書き競合を防ぐためfalseにします
 
 jobs:
   deploy:
@@ -23,37 +22,46 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout target branch
         uses: actions/checkout@v4
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
-
-      # -----------------------------------------------------------------
-      # 💡 魔法のステップ: 常に「両方のURL」を生かすため、
-      # サーバー側の既存のデプロイ成果物（Artifact）をダウンロードして合体させる
-      # -----------------------------------------------------------------
-      - name: Download existing Pages artifact (if available)
-        uses: actions/download-artifact@v4
-        continue-on-error: true # 初回デプロイ時はエラーを無視する
+      # 💡 過去の「mainとbetaが合体した状態の公開データ」を安全に引っ張ってくる
+      - name: Checkout complete gh-pages data
+        uses: actions/checkout@v4
+        continue-on-error: true
         with:
-          name: github-pages
-          path: ./_site
+          ref: gh-pages
+          path: old_site
 
-      # mainブランチの場合：ルート階層のファイルを更新
-      - name: Organize for main
-        if: github.ref_name == 'main'
+      # フォルダの組み立て処理
+      - name: Merge files
         run: |
           mkdir -p _site
-          rsync -av --exclude='_site' --exclude='.github' ./ _site/
+          
+          # 1. まず過去の公開データをベースとしてコピー（これでmainもbetaも残る）
+          if [ -d "old_site" ]; then
+            rsync -av --exclude='.git' old_site/ _site/
+          fi
+          
+          # 2. 今回プッシュされた最新のファイルを上書き配置
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            # mainならルート直下に上書き
+            rsync -av --exclude='_site' --exclude='old_site' --exclude='.github' ./ _site/
+          else
+            # betaならbetaフォルダの中に上書き
+            mkdir -p _site/beta
+            rsync -av --exclude='_site' --exclude='old_site' --exclude='.github' ./ _site/beta/
+          fi
 
-      # betaブランチの場合：betaフォルダの中身だけを更新
-      - name: Organize for beta
-        if: github.ref_name == 'beta'
-        run: |
-          mkdir -p _site/beta
-          rsync -av --exclude='_site' --exclude='.github' ./ _site/beta/
+      # 組み立てた最新の「合体データ」を、次回のベース用としてgh-pagesブランチに保存
+      - name: Save backup to gh-pages branch
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: gh-pages
+          folder: _site
+          clean: true
 
+      # GitHub Pagesへ超高速デプロイ
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
