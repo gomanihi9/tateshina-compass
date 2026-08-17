@@ -173,6 +173,218 @@
             <div id="statusMsg" class="status-msg"></div>
         </main>
 
+        <div class="version-badge">COPECK Version Beta 0.1.3 (Hyper Turbo)</div>
+    </div>
+
+    <!-- Download Modal -->
+    <div id="dlModal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>オフラインデータ管理</h3>
+                <button id="closeDlModalBtn" class="close-btn">&times;</button>
+            </div>
+            
+            <div id="areaList" class="area-list"></div>
+
+            <!-- GitHub Bounds Fetch Pulldown Section -->
+            <div class="gen-section">
+                <div style="font-size: 0.85rem; font-weight: 800;">🗺️ 関東甲信越から選択して追加</div>
+                <select id="prefSelect" class="form-select">
+                    <option value="">都道府県を選択...</option>
+                    <option value="nagano">長野県</option>
+                    <option value="yamanashi">山梨県</option>
+                    <option value="gunma">群馬県</option>
+                    <option value="tochigi">栃木県</option>
+                    <option value="niigata">新潟県</option>
+                    <option value="saitama">埼玉県</option>
+                    <option value="tokyo">東京都</option>
+                    <option value="kanagawa">神奈川県</option>
+                    <option value="chiba">千葉県</option>
+                    <option value="ibaraki">茨城県</option>
+                </select>
+
+                <select id="citySelect" class="form-select" disabled>
+                    <option value="">都道府県を先に選択...</option>
+                </select>
+                
+                <div id="progressContainer" class="progress-container">
+                    <div class="progress-bar-bg"><div id="progressBarFill" class="progress-bar-fill"></div></div>
+                    <div id="terminalLog" class="terminal-log">準備完了</div>
+                </div>
+
+                <button id="generateBtn" class="primary-btn" style="padding: 14px; font-size: 0.88rem;" disabled>ハイパーターボで一括取得</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const DB_NAME = 'TateshinaCompassDB', DB_VERSION = 1, STORE_NAME = 'offline_grids';
+        let masterBoundsData = null;
+
+        function openDB() {
+            return new Promise((resolve, reject) => {
+                const req = indexedDB.open(DB_NAME, DB_VERSION);
+                req.onupgradeneeded = e => e.target.result.createObjectStore(STORE_NAME, { keyPath: 'areaId' });
+                req.onsuccess = () => resolve(req.result);
+                req.onerror = () => reject(req.error);
+            });
+        }
+
+        async function saveOfflineGrid(data) {
+            const db = await openDB();
+            return new Promise(resolve => {
+                const tx = db.transaction(STORE_NAME, 'readwrite');
+                tx.objectStore(STORE_NAME).put(data);
+                tx.oncomplete = () => resolve();
+            });
+        }
+
+        async function deleteOfflineGrid(areaId) {
+            const db = await openDB();
+            return new Promise(resolve => {
+                const tx = db.transaction(STORE_NAME, 'readwrite');
+                tx.objectStore(STORE_NAME).delete(areaId);
+                tx.oncomplete = () => resolve();
+            });
+        }
+
+        async function getSavedGrids() {
+            const db = await openDB();
+            return new Promise(resolve => {
+                const req = db.transaction(STORE_NAME, 'readonly').objectStore(STORE_NAME).getAll();
+                req.onsuccess = () => resolve(req.result || []);
+                req.onerror = () => resolve([]);
+            });
+        }
+
+        const DEFAULT_AREAS = [
+            { id: 'chino', name: '茅野市エリア' }, { id: 'suwa', name: '諏訪市エリア' },
+            { id: 'haramura', name: '原村エリア' }, { id: 'karuizawa', name: '軽井沢町エリア' }
+        ];
+
+        function calculateOxygen(elevation) {
+            if (elevation <= 0) return 100.0;
+            return ((1013.25 * Math.pow((1 - (0.0065 * elevation) / 288.15), 5.2558)) / 1013.25 * 100).toFixed(1);
+        }
+
+        async function searchOffline(lat, lon) {
+            const grids = await getSavedGrids();
+            for (let area of grids) {
+                const b = area.bounds;
+                if (lat >= b.minLat && lat <= b.maxLat && lon >= b.minLon && lon <= b.maxLon) {
+                    const r = Math.round((lat - b.minLat) / 0.004);
+                    const c = Math.round((lon - b.minLon) / 0.004);
+                    if (area.elevations[r] && area.elevations[r][c] !== undefined) {
+                        return { elevation: area.elevations[r][c], areaName: area.areaName };
+                    }
+                }
+            }
+            return null;
+        }
+
+        const $ = id => document.getElementById(id);
+
+        function requestLocation() {
+            if (!navigator.geolocation) return;
+            $('statusMsg').textContent = 'GPS測位中...';
+            navigator.geolocation.getCurrentPosition(async pos => {
+                const { latitude: lat, longitude: lon } = pos.coords;
+                $('latValue').textContent = lat.toFixed(4);
+                $('lonValue').textContent = lon.toFixed(4);
+
+                if (navigator.onLine) {
+                    try {
+                        const res = await fetch(`https://cyberjapandata2.gsi.go.jp/general/dem/scripts/getelevation.php?lon=${lon}&lat=${lat}&outtype=JSON`);
+                        const data = await res.json();
+                        if (data && data.elevation !== "-----") {
+                            const ele = Math.round(parseFloat(data.elevation));
+                            animateElevation(ele);
+                            displayResult(ele, '現在地', false);
+                            $('statusMsg').textContent = '国土地理院APIから取得完了';
+                            return;
+                        }
+                    } catch (e) {}
+                }
+
+                const offline = await searchOffline(lat, lon);
+                if (offline) {
+                    animateElevation(offline.elevation);
+                    displayResult(offline.elevation, offline.areaName, true);
+                    $('statusMsg').textContent = `オフラインデータ（${offline.areaName}）表示中`;
+                } else {
+                    $('statusMsg').textContent = '対応エリア外です。データを追加してください。';
+                }
+            });
+        }
+
+        function displayResult(ele, name, isOffline) {
+                    <button id="installAppBtn" class="primary-btn">📲 ホーム画面に追加する</button>
+            <div style="background: var(--bg); border-radius: 12px; padding: 12px; font-size: 0.78rem; text-align: left; border: 1px solid var(--border); width: 100%;">
+                <b>💡 ヒント：</b><br>
+                • iPhone: 共有「⇧」➔ ホーム画面に追加<br>
+                • Android: メニュー「⋮」➔ アプリをインストール
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container">
+        <header class="header">
+            <div>
+                <h1 class="app-title">Tateshina Compass</h1>
+                <p class="app-subtitle">信州蓼科 標高ナビゲーター</p>
+            </div>
+            <button id="openDlModalBtn" class="icon-btn" title="オフラインデータ管理">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+            </button>
+        </header>
+
+        <main class="card">
+            <div class="mountain-container">
+                <svg class="mountain-svg" viewBox="0 0 300 140" fill="none">
+                    <circle cx="210" cy="45" r="26" fill="#f2c5bb"/>
+                    <path d="M120 120L210 50L300 120H120Z" fill="#93b482"/>
+                    <path d="M10 120L135 25L260 120H10Z" fill="#4a7c36"/>
+                    <rect x="0" y="117" width="300" height="6" rx="3" fill="#2d2a26"/>
+                    <g transform="translate(0, -10)">
+                        <path d="M135 48C145 48 153 56 153 66C153 78 135 94 135 94C135 94 117 78 117 66C117 56 125 48 135 48Z" fill="#d96b43"/>
+                        <circle cx="135" cy="65" r="5" fill="#fdfbf7"/>
+                    </g>
+                </svg>
+            </div>
+
+            <div id="locationTag" class="location-tag">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                <span id="locationName">現在地を検索中...</span>
+            </div>
+
+            <div class="elevation-display">
+                <div class="elevation-label">標高 (海抜)</div>
+                <div class="elevation-value-wrapper">
+                    <span id="elevationPrefix" class="elevation-prefix" style="display:none;">約</span>
+                    <span id="elevationValue" class="elevation-value">----</span>
+                    <span class="elevation-unit">m</span>
+                </div>
+            </div>
+
+            <div class="oxygen-box">
+                <div class="oxygen-title">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c-5.33 4.55-8 8.48-8 11.8 0 4.98 3.8 8.2 8 8.2s8-3.22 8-8.2c0-3.32-2.67-7.25-8-11.8z"/></svg>
+                    <span>大気中実質酸素濃度</span>
+                </div>
+                <div id="oxygenValue" class="oxygen-value">--.- %</div>
+            </div>
+
+            <div class="coords-box">
+                <div class="coord-item"><span class="coord-label">北緯 (LAT)</span><span id="latValue" class="coord-val">--.----</span></div>
+                <div style="width:1px; height:20px; background:var(--border);"></div>
+                <div class="coord-item"><span class="coord-label">東経 (LON)</span><span id="lonValue" class="coord-val">---.----</span></div>
+            </div>
+
+            <button id="updateBtn" class="primary-btn">現在地を更新する</button>
+            <div id="statusMsg" class="status-msg"></div>
+        </main>
+
         <div class="version-badge">COPECK Version Beta 0.1.3</div>
     </div>
 
