@@ -14,7 +14,7 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,700;0,800;0,900;1,800&family=Zen+Kaku+Gothic+New:wght@700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800;900&family=Zen+Kaku+Gothic+New:wght@700;900&display=swap" rel="stylesheet">
     
     <style>
         :root {
@@ -30,26 +30,25 @@
         .app-title { font-size: 1.8rem; font-weight: 900; text-transform: uppercase; line-height: 1; letter-spacing: -0.03em; }
         .app-subtitle { font-size: 0.8rem; font-weight: 600; color: var(--sub); margin-top: 4px; letter-spacing: 0.05em; }
         
-        .icon-btn { background: var(--card); border: 1px solid var(--border); border-radius: 50%; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.04); transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1); }
-        .icon-btn:active { transform: scale(0.86); }
+        .icon-btn { background: var(--card); border: 1px solid var(--border); border-radius: 50%; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.04); transition: transform 0.2s; }
+        .icon-btn:active { transform: scale(0.9); }
         
-        .card { background: var(--card); border-radius: var(--radius-lg); padding: 28px 24px; box-shadow: 0 16px 40px rgba(45,42,38,0.08); display: flex; flex-direction: column; align-items: center; border: 1px solid rgba(255,255,255,0.9); position: relative; overflow: hidden; }
+        .card { background: var(--card); border-radius: var(--radius-lg); padding: 28px 24px; box-shadow: 0 16px 40px rgba(45,42,38,0.08); display: flex; flex-direction: column; align-items: center; border: 1px solid rgba(255,255,255,0.9); position: relative; }
         
         .mountain-container { width: 100%; height: 130px; margin-bottom: 8px; display: flex; justify-content: center; align-items: center; }
-        .mountain-svg { width: 100%; height: 100%; max-height: 120px; transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
-        .card:hover .mountain-svg { transform: translateY(-4px) scale(1.02); }
+        .mountain-svg { width: 100%; height: 100%; max-height: 120px; }
         
-        .location-tag { background: var(--accent-light); color: var(--accent); padding: 6px 16px; border-radius: 20px; font-size: 0.8rem; font-weight: 800; margin-bottom: 12px; display: inline-flex; align-items: center; gap: 6px; transition: all 0.3s ease; }
+        .location-tag { background: var(--accent-light); color: var(--accent); padding: 6px 16px; border-radius: 20px; font-size: 0.8rem; font-weight: 800; margin-bottom: 12px; display: inline-flex; align-items: center; gap: 6px; }
         .location-tag.is-offline { background: var(--offline-bg); color: #8c7355; }
         
         .elevation-display { text-align: center; margin: 4px 0 16px 0; }
         .elevation-label { font-size: 0.8rem; font-weight: 700; color: var(--sub); letter-spacing: 0.1em; text-transform: uppercase; }
         .elevation-value-wrapper { display: flex; align-items: baseline; justify-content: center; gap: 4px; }
         .elevation-prefix { font-size: 1.5rem; font-weight: 800; color: var(--sub); opacity: 0.8; }
-        .elevation-value { font-size: 4.2rem; font-weight: 900; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -0.04em; }
+        .elevation-value { font-size: 4.2rem; font-weight: 900; line-height: 1; font-variant-numeric: tabular-nums; }
         .elevation-unit { font-size: 1.5rem; font-weight: 800; color: var(--accent); }
         
-        .oxygen-box { background: linear-gradient(135deg, #eef7ff, #e3f2fd); border: 1px solid #c5e1a5; border-radius: var(--radius-md); padding: 10px 16px; width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; box-shadow: inset 0 2px 4px rgba(255,255,255,0.6); }
+        .oxygen-box { background: linear-gradient(135deg, #eef7ff, #e3f2fd); border: 1px solid #c5e1a5; border-radius: var(--radius-md); padding: 10px 16px; width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
         .oxygen-title { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; font-weight: 800; color: #2e7d32; }
         .oxygen-value { font-size: 1.1rem; font-weight: 900; color: #1b5e20; }
         
@@ -58,71 +57,46 @@
         .coord-label { font-size: 0.68rem; font-weight: 700; color: var(--sub); }
         .coord-val { font-size: 0.9rem; font-weight: 700; margin-top: 2px; }
         
-        .primary-btn { background: var(--accent); color: #fff; border: none; border-radius: var(--radius-md); width: 100%; padding: 16px; font-size: 1rem; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 8px 20px rgba(217,107,67,0.3); transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1); }
-        .primary-btn:active { transform: scale(0.95); background: var(--accent-hover); box-shadow: 0 4px 10px rgba(217,107,67,0.2); }
-        .primary-btn:disabled { background: #ccbdaf; box-shadow: none; cursor: not-allowed; transform: none; }
+        .primary-btn { background: var(--accent); color: #fff; border: none; border-radius: var(--radius-md); width: 100%; padding: 16px; font-size: 1rem; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 8px 20px rgba(217,107,67,0.3); }
+        .primary-btn:active { transform: scale(0.96); background: var(--accent-hover); }
+        .primary-btn:disabled { background: #ccbdaf; box-shadow: none; cursor: not-allowed; }
         
         .status-msg { font-size: 0.8rem; font-weight: 700; margin-top: 12px; text-align: center; color: var(--accent); min-height: 1.2em; }
-        .version-badge { font-size: 0.7rem; font-weight: 700; color: #b0a89e; text-align: center; margin-top: 12px; letter-spacing: 0.05em; }
+        .version-badge { font-size: 0.7rem; font-weight: 700; color: #b0a89e; text-align: center; margin-top: 12px; }
         
-        /* Modal & Progress Styles */
-        .modal-overlay { position: fixed; inset: 0; background: rgba(45,42,38,0.5); backdrop-filter: blur(6px); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 16px; opacity: 0; transition: opacity 0.3s ease; }
-        .modal-overlay.active { display: flex; opacity: 1; }
-        .modal-card { background: var(--card); border-radius: var(--radius-lg); width: 100%; max-width: 380px; padding: 24px; display: flex; flex-direction: column; gap: 14px; max-height: 85vh; overflow-y: auto; box-shadow: 0 24px 48px rgba(0,0,0,0.15); transform: translateY(10px); transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
-        .modal-overlay.active .modal-card { transform: translateY(0); }
+        /* Modal Styles */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(45,42,38,0.5); backdrop-filter: blur(4px); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 16px; }
+        .modal-overlay.active { display: flex; }
+        .modal-card { background: var(--card); border-radius: var(--radius-lg); width: 100%; max-width: 380px; padding: 24px; display: flex; flex-direction: column; gap: 14px; max-height: 85vh; overflow-y: auto; box-shadow: 0 24px 48px rgba(0,0,0,0.15); }
         .modal-header { display: flex; justify-content: space-between; align-items: center; font-weight: 900; }
-        .close-btn { background: none; border: none; font-size: 1.5rem; color: var(--sub); cursor: pointer; transition: transform 0.2s; }
-        .close-btn:active { transform: scale(0.8); }
+        .close-btn { background: none; border: none; font-size: 1.5rem; color: var(--sub); cursor: pointer; }
         
         .area-list { display: flex; flex-direction: column; gap: 8px; max-height: 180px; overflow-y: auto; }
         .area-item { background: var(--bg); border-radius: var(--radius-md); padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border); font-size: 0.9rem; font-weight: 700; }
         .area-actions { display: flex; gap: 6px; align-items: center; }
         
-        .dl-btn { background: var(--accent); color: #fff; border: none; border-radius: 20px; padding: 6px 12px; font-size: 0.75rem; font-weight: 800; cursor: pointer; transition: transform 0.2s; }
-        .dl-btn:active { transform: scale(0.92); }
+        .dl-btn { background: var(--accent); color: #fff; border: none; border-radius: 20px; padding: 6px 12px; font-size: 0.75rem; font-weight: 800; cursor: pointer; }
         .dl-btn.downloaded { background: #81c784; cursor: default; }
-        .del-btn { background: #ffcdd2; color: #c62828; border: none; border-radius: 50%; width: 28px; height: 28px; font-size: 0.85rem; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform 0.2s; }
-        .del-btn:active { transform: scale(0.88); }
+        .del-btn { background: #ffcdd2; color: #c62828; border: none; border-radius: 50%; width: 28px; height: 28px; font-size: 0.85rem; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 
         .gen-section { border-top: 1px solid var(--border); padding-top: 12px; display: flex; flex-direction: column; gap: 10px; }
         .form-select { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); font-size: 0.9rem; outline: none; font-weight: 700; color: var(--text); }
         
-        /* Turbo Terminal & Progress Bar */
         .progress-container { display: none; flex-direction: column; gap: 6px; width: 100%; }
         .progress-bar-bg { width: 100%; height: 8px; background: var(--bg); border-radius: 4px; overflow: hidden; border: 1px solid var(--border); }
         .progress-bar-fill { width: 0%; height: 100%; background: linear-gradient(90deg, #d96b43, #ff8a65); transition: width 0.15s ease; border-radius: 4px; }
         .terminal-log { background: #1e1b18; color: #a9dc76; font-family: monospace; font-size: 0.7rem; padding: 8px 10px; border-radius: 8px; max-height: 60px; overflow-y: auto; line-height: 1.4; }
-
-        #browserLanding { position: fixed; inset: 0; background: var(--bg); z-index: 2000; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 24px; text-align: center; }
     </style>
 </head>
 <body>
 
-    <!-- Browser Guard Landing -->
-    <div id="browserLanding">
-        <div class="modal-card" style="align-items: center; text-align: center; gap: 18px; max-width: 380px;">
-            <div style="width: 64px; height: 64px; background: var(--accent-light); border-radius: 20px; display: flex; align-items: center; justify-content: center; color: var(--accent);">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
-            </div>
-            <h2 style="font-size: 1.2rem; font-weight: 900;">Tateshina Compass へようこそ</h2>
-            <p style="font-size: 0.85rem; color: var(--sub);">ホーム画面に追加して専用アプリとして起動すると、オフラインでも快適に動作します。</p>
-            <button id="installAppBtn" class="primary-btn">📲 ホーム画面に追加する</button>
-            <div style="background: var(--bg); border-radius: 12px; padding: 12px; font-size: 0.78rem; text-align: left; border: 1px solid var(--border); width: 100%;">
-                <b>💡 ヒント：</b><br>
-                • iPhone: 共有「⇧」➔ ホーム画面に追加<br>
-                • Android: メニュー「⋮」➔ アプリをインストール
-            </div>
-        </div>
-    </div>
-
-    <!-- Main Content -->
     <div class="container">
         <header class="header">
             <div>
                 <h1 class="app-title">Tateshina Compass</h1>
                 <p class="app-subtitle">信州蓼科 標高ナビゲーター</p>
             </div>
-            <button id="openDlModalBtn" class="icon-btn" title="オフラインデータ管理" aria-label="オフラインデータ管理">
+            <button id="openDlModalBtn" class="icon-btn" title="オフラインデータ管理">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
             </button>
         </header>
@@ -186,7 +160,6 @@
             
             <div id="areaList" class="area-list"></div>
 
-            <!-- GitHub Bounds Fetch Pulldown Section -->
             <div class="gen-section">
                 <div style="font-size: 0.85rem; font-weight: 800;">🗺️ 関東甲信越から選択して追加</div>
                 <select id="prefSelect" class="form-select">
@@ -309,4 +282,59 @@
             $('elevationPrefix').style.display = isOffline ? 'inline' : 'none';
             $('oxygenValue').textContent = `${calculateOxygen(ele)} %`;
             $('locationName').textContent = name;
-       
+            $('locationTag').classList.toggle('is-offline', isOffline);
+        }
+
+        function animateElevation(target) {
+            const start = parseFloat($('elevationValue').textContent) || 0;
+            const duration = 1000;
+            const startTime = performance.now();
+            function update(time) {
+                const elapsed = time - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const ease = 1 - Math.pow(1 - progress, 3);
+                const current = start + (target - start) * ease;
+                $('elevationValue').textContent = Math.round(current).toLocaleString();
+                if (progress < 1) requestAnimationFrame(update);
+            }
+            requestAnimationFrame(update);
+        }
+
+        async function loadMasterBounds() {
+            if (masterBoundsData) return masterBoundsData;
+            try {
+                // 相対パスで境界マスタを取得
+                const res = await fetch('data/kantou_koushinetsu_bounds.json');
+                if (!res.ok) throw new Error("JSON 404 Not Found");
+                masterBoundsData = await res.json();
+                return masterBoundsData;
+            } catch(e) {
+                alert('境界マスタの取得に失敗しました。`/data/kantou_koushinetsu_bounds.json` が配置されているか確認してください。');
+                return null;
+            }
+        }
+
+        async function renderAreaList() {
+            const allSaved = await getDBData('readonly', STORE_NAME, 'getAll') || [];
+            const savedIds = allSaved.map(s => s.areaId);
+            const list = $('areaList');
+            if(!list) return;
+            list.innerHTML = '';
+
+            DEFAULT_AREAS.forEach(area => {
+                const isDl = savedIds.includes(area.id);
+                list.innerHTML += `
+                    <div class="area-item">
+                        <span>${area.name}</span>
+                        <div class="area-actions">
+                            <button class="dl-btn ${isDl ? 'downloaded' : ''}" onclick="downloadPreset('${area.id}')">${isDl ? '保存済' : '保存'}</button>
+                            ${isDl ? `<button class="del-btn" onclick="removeArea('${area.id}')">×</button>` : ''}
+                        </div>
+                    </div>`;
+            });
+
+            allSaved.forEach(area => {
+                if (!DEFAULT_AREAS.some(d => d.id === area.areaId)) {
+                    list.innerHTML += `
+                        <div class="area-item">
+                            <s
