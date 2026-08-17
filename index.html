@@ -188,6 +188,11 @@
     </div>
 
     <script>
+        // スマホ画面にエラーを文字で強制表示させるデバッグコード
+        window.onerror = function(msg, url, line) {
+            alert("エラー発生: " + msg + " (行: " + line + ")");
+        };
+
         const DB_NAME = 'TateshinaCompassDB', DB_VERSION = 1, STORE_NAME = 'offline_grids';
         let masterBounds = null;
 
