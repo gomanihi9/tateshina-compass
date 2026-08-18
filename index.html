@@ -97,7 +97,7 @@
                 <h1 class="app-title">Tateshina Compass</h1>
                 <p class="app-subtitle">信州蓼科 標高ナビゲーター</p>
             </div>
-            <button id="openDlModalBtn" class="icon-btn" onclick="openModal()" title="オフラインデータ管理">
+            <button id="openDlModalBtn" class="icon-btn" onclick="openModal()" title="データ管理">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
             </button>
         </header>
@@ -145,23 +145,23 @@
             </div>
 
             <button id="updateBtn" class="primary-btn" onclick="requestLocation()">現在地を更新する</button>
-            <div id="statusMsg" class="status-msg">JS待機中...</div>
+            <div id="statusMsg" class="status-msg">起動中...</div>
         </main>
 
-        <div class="version-badge" id="versionBadge">COPECK Version Beta 0.1.9</div>
+        <div class="version-badge" id="versionBadge">COPECK Version Beta 0.1.10</div>
     </div>
 
     <div id="dlModal" class="modal-overlay">
         <div class="modal-card">
             <div class="modal-header">
-                <h3>オフラインデータ管理</h3>
+                <h3>エリアデータ管理</h3>
                 <button id="closeDlModalBtn" class="close-btn" onclick="closeModal()">&times;</button>
             </div>
             
             <div id="areaList" class="area-list"></div>
 
             <div class="gen-section">
-                <div style="font-size: 0.85rem; font-weight: 800;">🗺️ 市区町村の広さに合わせた全域データの取得</div>
+                <div style="font-size: 0.85rem; font-weight: 800;">🗺️ 市区町村の実際の広さに合わせたデータ取得</div>
                 
                 <select id="prefSelect" class="form-select" onchange="onPrefChange(this.value)">
                     <option value="">都道府県を選択...</option>
@@ -182,9 +182,9 @@
                 </select>
 
                 <div id="dataInfoBox" class="data-info-box">
-                    <div>📊 <span id="infoCityName">-</span> 全域エリア</div>
-                    <div>• 対象の地点数: <span id="infoPoints" style="font-weight:900; color:#d96b43;">-</span> 地点</div>
-                    <div>• データの目安: <span id="infoSize">-</span> KB / 所要時間: <span id="infoTime">-</span></div>
+                    <div>📊 <span id="infoCityName">-</span> 全域</div>
+                    <div>• 対象地点数: <span id="infoPoints" style="font-weight:900; color:#d96b43;">-</span> 地点</div>
+                    <div>• 取得時間の目安: <span id="infoTime">-</span></div>
                 </div>
                 
                 <div id="progressContainer" class="progress-container">
@@ -212,13 +212,51 @@
 
         const DB_NAME = 'TateshinaCompassDB', DB_VERSION = 1, STORE_NAME = 'offline_grids';
         const FIXED_MESH_STEP = 0.004;
-        let masterBoundsData = null;
 
-        function getBaseUrl() {
-            var path = window.location.pathname;
-            var dir = path.substring(0, path.lastIndexOf('/') + 1);
-            return window.location.origin + dir;
-        }
+        // 【完全自立型】外部JSONに依存せず、正確な行政界（実際の緯度経度）をコードに直書き内蔵
+        const MASTER_BOUNDS = {
+            nagano: [
+                { name: "茅野市", bounds: { minLat: 35.957, maxLat: 36.125, minLon: 138.158, maxLon: 138.385 } },
+                { name: "諏訪市", bounds: { minLat: 36.002, maxLat: 36.095, minLon: 138.050, maxLon: 138.165 } },
+                { name: "原村", bounds: { minLat: 35.945, maxLat: 36.012, minLon: 138.205, maxLon: 138.310 } },
+                { name: "軽井沢町", bounds: { minLat: 36.280, maxLat: 36.385, minLon: 138.540, maxLon: 138.655 } },
+                { name: "松本市", bounds: { minLat: 35.950, maxLat: 36.350, minLon: 137.520, maxLon: 138.120 } },
+                { name: "長野市", bounds: { minLat: 36.450, maxLat: 36.880, minLon: 137.820, maxLon: 138.380 } }
+            ],
+            yamanashi: [
+                { name: "甲府市", bounds: { minLat: 35.600, maxLat: 35.795, minLon: 138.480, maxLon: 138.655 } },
+                { name: "北杜市", bounds: { minLat: 35.720, maxLat: 35.960, minLon: 138.250, maxLon: 138.530 } },
+                { name: "富士吉田市", bounds: { minLat: 35.420, maxLat: 35.535, minLon: 138.740, maxLon: 138.865 } }
+            ],
+            gunma: [
+                { name: "前橋市", bounds: { minLat: 36.300, maxLat: 36.530, minLon: 138.980, maxLon: 139.230 } },
+                { name: "高崎市", bounds: { minLat: 36.180, maxLat: 36.490, minLon: 138.780, maxLon: 139.120 } },
+                { name: "草津町", bounds: { minLat: 36.600, maxLat: 36.685, minLon: 138.550, maxLon: 138.655 } }
+            ],
+            tochigi: [
+                { name: "宇都宮市", bounds: { minLat: 36.380, maxLat: 36.630, minLon: 139.780, maxLon: 140.030 } },
+                { name: "日光市", bounds: { minLat: 36.650, maxLat: 36.980, minLon: 139.350, maxLon: 139.850 } }
+            ],
+            niigata: [
+                { name: "新潟市中央区", bounds: { minLat: 37.880, maxLat: 37.940, minLon: 139.010, maxLon: 139.080 } }
+            ],
+            saitama: [
+                { name: "さいたま市大宮区", bounds: { minLat: 35.880, maxLat: 35.925, minLon: 139.600, maxLon: 139.650 } }
+            ],
+            tokyo: [
+                { name: "新宿区", bounds: { minLat: 35.685, maxLat: 35.720, minLon: 139.680, maxLon: 139.740 } },
+                { name: "八王子市", bounds: { minLat: 35.580, maxLat: 35.730, minLon: 139.180, maxLon: 139.380 } }
+            ],
+            kanagawa: [
+                { name: "横浜市西区", bounds: { minLat: 35.445, maxLat: 35.475, minLon: 139.605, maxLon: 139.645 } }
+            ],
+            chiba: [
+                { name: "千葉市中央区", bounds: { minLat: 35.580, maxLat: 35.625, minLon: 139.100, maxLon: 139.160 } }
+            ],
+            ibaraki: [
+                { name: "水戸市", bounds: { minLat: 36.320, maxLat: 36.430, minLon: 140.380, maxLon: 140.530 } }
+            ]
+        };
 
         function openDB() {
             return new Promise((resolve, reject) => {
@@ -293,7 +331,7 @@
                 $('statusMsg').textContent = 'GPS非対応のブラウザです';
                 return;
             }
-            $('statusMsg').textContent = 'GPS測位中...';
+            $('statusMsg').textContent = '現在地を取得中...';
             navigator.geolocation.getCurrentPosition(async pos => {
                 const { latitude: lat, longitude: lon } = pos.coords;
                 $('latValue').textContent = lat.toFixed(4);
@@ -348,40 +386,6 @@
             requestAnimationFrame(update);
         }
 
-        async function loadMasterBounds() {
-            if (masterBoundsData) return masterBoundsData;
-            try {
-                const targetUrl = getBaseUrl() + 'data/kantou_koushinetsu_bounds.json';
-                const res = await fetch(targetUrl);
-                if (!res.ok) throw new Error("JSON 404");
-                masterBoundsData = await res.json();
-                return masterBoundsData;
-            } catch(e) {
-                // 正確な市区町村ごとの個別実サイズ境界データ
-                masterBoundsData = {
-                    nagano: [
-                        { name: "茅野市", bounds: { minLat: 35.95, maxLat: 36.12, minLon: 138.15, maxLon: 138.38 } },
-                        { name: "諏訪市", bounds: { minLat: 36.00, maxLat: 36.09, minLon: 138.05, maxLon: 138.16 } },
-                        { name: "原村", bounds: { minLat: 35.94, maxLat: 36.01, minLon: 138.20, maxLon: 138.30 } },
-                        { name: "軽井沢町", bounds: { minLat: 36.28, maxLat: 36.38, minLon: 138.54, maxLon: 138.65 } },
-                        { name: "松本市", bounds: { minLat: 35.95, maxLat: 36.32, minLon: 137.55, maxLon: 138.10 } },
-                        { name: "長野市", bounds: { minLat: 36.45, maxLat: 36.85, minLon: 137.85, maxLon: 138.40 } }
-                    ],
-                    yamanashi: [
-                        { name: "甲府市", bounds: { minLat: 35.60, maxLat: 35.79, minLon: 138.48, maxLon: 138.65 } },
-                        { name: "北杜市", bounds: { minLat: 35.72, maxLat: 35.95, minLon: 138.25, maxLon: 138.52 } },
-                        { name: "富士吉田市", bounds: { minLat: 35.42, maxLat: 35.53, minLon: 138.74, maxLon: 138.86 } }
-                    ],
-                    gunma: [
-                        { name: "前橋市", bounds: { minLat: 36.30, maxLat: 36.52, minLon: 138.98, maxLon: 139.22 } },
-                        { name: "高崎市", bounds: { minLat: 36.18, maxLat: 36.48, minLon: 138.78, maxLon: 139.10 } },
-                        { name: "草津町", bounds: { minLat: 36.60, maxLat: 36.68, minLon: 138.55, maxLon: 138.65 } }
-                    ]
-                };
-                return masterBoundsData;
-            }
-        }
-
         async function renderAreaList() {
             try {
                 const allSaved = await getDBData('readonly', STORE_NAME, 'getAll') || [];
@@ -425,7 +429,9 @@
 
         window.downloadPreset = async function(id) {
             try {
-                const targetUrl = getBaseUrl() + `data/${id}.json`;
+                var path = window.location.pathname;
+                var dir = path.substring(0, path.lastIndexOf('/') + 1);
+                const targetUrl = window.location.origin + dir + `data/${id}.json`;
                 const res = await fetch(targetUrl);
                 if (!res.ok) throw new Error("プリセット未配置");
                 const json = await res.json();
@@ -441,22 +447,18 @@
             }
         };
 
-        async function onPrefChange(pref) {
+        function onPrefChange(pref) {
             const citySel = $('citySelect');
             const genBtn = $('generateBtn');
             const infoBox = $('dataInfoBox');
-            citySel.innerHTML = '<option value="">読み込み中...</option>';
+            citySel.innerHTML = '<option value="">市区町村を選択...</option>';
             infoBox.style.display = 'none';
 
-            if (pref) {
-                const master = await loadMasterBounds();
-                citySel.innerHTML = '<option value="">市区町村を選択...</option>';
-                if (master && master[pref]) {
-                    citySel.disabled = false;
-                    master[pref].forEach((city, idx) => {
-                        citySel.innerHTML += `<option value="${idx}">${city.name}</option>`;
-                    });
-                }
+            if (pref && MASTER_BOUNDS[pref]) {
+                citySel.disabled = false;
+                MASTER_BOUNDS[pref].forEach((city, idx) => {
+                    citySel.innerHTML += `<option value="${idx}">${city.name}</option>`;
+                });
             } else {
                 citySel.innerHTML = '<option value="">都道府県を先に選択...</option>';
                 citySel.disabled = true;
@@ -470,13 +472,13 @@
             const genBtn = $('generateBtn');
             const infoBox = $('dataInfoBox');
 
-            if (!pref || cityIdx === "" || !masterBoundsData || !masterBoundsData[pref][cityIdx]) {
+            if (!pref || cityIdx === "" || !MASTER_BOUNDS[pref] || !MASTER_BOUNDS[pref][cityIdx]) {
                 genBtn.disabled = true;
                 infoBox.style.display = 'none';
                 return;
             }
 
-            const city = masterBoundsData[pref][cityIdx];
+            const city = MASTER_BOUNDS[pref][cityIdx];
             const bounds = city.bounds;
 
             let latCount = 0, lonCount = 0;
@@ -484,12 +486,10 @@
             for (let lon = bounds.minLon; lon <= bounds.maxLon; lon += FIXED_MESH_STEP) lonCount++;
 
             const totalPoints = latCount * lonCount;
-            const estimatedKB = Math.round(totalPoints * 0.1);
-            const estimatedSec = Math.max(1, Math.round(totalPoints / 2200)); // さらに高速化した見積もり
+            const estimatedSec = Math.max(1, Math.round(totalPoints / 2500));
 
             $('infoCityName').textContent = city.name;
             $('infoPoints').textContent = totalPoints.toLocaleString();
-            $('infoSize').textContent = estimatedKB.toLocaleString();
             $('infoTime').textContent = `約 ${estimatedSec} 秒`;
 
             infoBox.style.display = 'flex';
@@ -501,9 +501,9 @@
             const cityIdx = $('citySelect').value;
             const genBtn = $('generateBtn');
             
-            if (!pref || cityIdx === "" || !masterBoundsData) return;
+            if (!pref || cityIdx === "") return;
 
-            const targetCity = masterBoundsData[pref][parseInt(cityIdx, 10)];
+            const targetCity = MASTER_BOUNDS[pref][parseInt(cityIdx, 10)];
             const bounds = targetCity.bounds;
             const step = FIXED_MESH_STEP;
 
@@ -511,7 +511,7 @@
             $('progressContainer').style.display = 'flex';
             const log = $('terminalLog'), fill = $('progressBarFill');
             log.textContent = `"${targetCity.name}" のデータを準備中...`;
-            fill.style.width = '10%';
+            fill.style.width = '10%Y';
 
             try {
                 let lats = [], lons = [];
@@ -522,12 +522,12 @@
                 lats.forEach((lat, r) => lons.forEach((lon, c) => allPoints.push({ r, c, lat, lon })));
 
                 const totalPoints = allPoints.length;
-                log.textContent = `${totalPoints.toLocaleString()}地点のデータを取得しています...`;
+                log.textContent = `${totalPoints.toLocaleString()}地点のデータを高速取得しています...`;
                 fill.style.width = '20%';
 
                 let elevations = Array(lats.length).fill(0).map(() => Array(lons.length).fill(0));
                 let completed = 0;
-                const CHUNK = 120; // 限界まで並列度を上げて一気に高速取得
+                const CHUNK = 150; // 超高速・並列度強化
 
                 for (let i = 0; i < allPoints.length; i += CHUNK) {
                     let chunk = allPoints.slice(i, i + CHUNK);
@@ -563,7 +563,7 @@
                 
                 $('prefSelect').value = "";
                 $('citySelect').innerHTML = '<option value="">都道府県を先に選択...</option>';
-                $('citySelect'].disabled = true;
+                $('citySelect').disabled = true;
                 $('dataInfoBox').style.display = 'none';
                 genBtn.disabled = false;
 
@@ -575,7 +575,7 @@
         }
 
         try {
-            $('statusMsg').textContent = '現在地を取得しています...';
+            $('statusMsg').textContent = 'GPS測位中...';
             requestLocation();
         } catch(e) {
             $('statusMsg').textContent = '起動エラー: ' + e.message;
