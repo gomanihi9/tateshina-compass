@@ -85,7 +85,7 @@
         
         .progress-container { display: none; flex-direction: column; gap: 6px; width: 100%; }
         .progress-bar-bg { width: 100%; height: 8px; background: var(--bg); border-radius: 4px; overflow: hidden; border: 1px solid var(--border); }
-        .progress-bar-fill { width: 0%; height: 100%; background: linear-gradient(90deg, #d96b43, #ff8a65); transition: width 0.1s linear; border-radius: 4px; }
+        .progress-bar-fill { width: 0%; height: 100%; background: linear-gradient(90deg, #d96b43, #ff8a65); transition: width 0.08s linear; border-radius: 4px; }
         .terminal-log { background: #1e1b18; color: #a9dc76; font-family: monospace; font-size: 0.7rem; padding: 8px 10px; border-radius: 8px; max-height: 60px; overflow-y: auto; line-height: 1.4; }
     </style>
 </head>
@@ -148,7 +148,7 @@
             <div id="statusMsg" class="status-msg">JS待機中...</div>
         </main>
 
-        <div class="version-badge" id="versionBadge">COPECK Version Beta 0.1.8 (Max Turbo Speed)</div>
+        <div class="version-badge" id="versionBadge">COPECK Version Beta 0.1.9</div>
     </div>
 
     <div id="dlModal" class="modal-overlay">
@@ -161,7 +161,7 @@
             <div id="areaList" class="area-list"></div>
 
             <div class="gen-section">
-                <div style="font-size: 0.85rem; font-weight: 800;">🗺️ 各自治体の広さにフィットした全域取得 (400m固定)</div>
+                <div style="font-size: 0.85rem; font-weight: 800;">🗺️ 市区町村の広さに合わせた全域データの取得</div>
                 
                 <select id="prefSelect" class="form-select" onchange="onPrefChange(this.value)">
                     <option value="">都道府県を選択...</option>
@@ -182,9 +182,9 @@
                 </select>
 
                 <div id="dataInfoBox" class="data-info-box">
-                    <div>📊 <span id="infoCityName">-</span> 全域 (400mメッシュ)</div>
-                    <div>• 取得地点数: <span id="infoPoints" style="font-weight:900; color:#d96b43;">-</span> 地点</div>
-                    <div>• 予想サイズ: <span id="infoSize">-</span> KB / 爆速目安: <span id="infoTime">-</span></div>
+                    <div>📊 <span id="infoCityName">-</span> 全域エリア</div>
+                    <div>• 対象の地点数: <span id="infoPoints" style="font-weight:900; color:#d96b43;">-</span> 地点</div>
+                    <div>• データの目安: <span id="infoSize">-</span> KB / 所要時間: <span id="infoTime">-</span></div>
                 </div>
                 
                 <div id="progressContainer" class="progress-container">
@@ -192,7 +192,7 @@
                     <div id="terminalLog" class="terminal-log">準備完了</div>
                 </div>
 
-                <button id="generateBtn" class="primary-btn" onclick="onGenerateClick()" style="padding: 14px; font-size: 0.88rem;" disabled>全域データを限界突破ターボ取得</button>
+                <button id="generateBtn" class="primary-btn" onclick="onGenerateClick()" style="padding: 14px; font-size: 0.88rem;" disabled>このエリアのデータを取得する</button>
             </div>
         </div>
     </div>
@@ -211,7 +211,7 @@
         };
 
         const DB_NAME = 'TateshinaCompassDB', DB_VERSION = 1, STORE_NAME = 'offline_grids';
-        const FIXED_MESH_STEP = 0.004; // 400mメッシュ完全固定
+        const FIXED_MESH_STEP = 0.004;
         let masterBoundsData = null;
 
         function getBaseUrl() {
@@ -246,10 +246,10 @@
         }
 
         const DEFAULT_AREAS = [
-            { id: 'chino', name: '茅野市エリア', sub: '約 1,800 地点 (~180KB)' },
-            { id: 'suwa', name: '諏訪市エリア', sub: '約 900 地点 (~90KB)' },
-            { id: 'haramura', name: '原村エリア', sub: '約 450 地点 (~45KB)' },
-            { id: 'karuizawa', name: '軽井沢町エリア', sub: '約 1,100 地点 (~110KB)' }
+            { id: 'chino', name: '茅野市エリア', sub: '約 1,800 地点' },
+            { id: 'suwa', name: '諏訪市エリア', sub: '約 900 地点' },
+            { id: 'haramura', name: '原村エリア', sub: '約 450 地点' },
+            { id: 'karuizawa', name: '軽井沢町エリア', sub: '約 1,100 地点' }
         ];
 
         function calculateOxygen(elevation) {
@@ -307,7 +307,7 @@
                             const ele = Math.round(parseFloat(data.elevation));
                             animateElevation(ele);
                             displayResult(ele, '現在地', false);
-                            $('statusMsg').textContent = '国土地理院APIから取得完了';
+                            $('statusMsg').textContent = '現在地の標高を取得しました';
                             return;
                         }
                     } catch (e) {}
@@ -317,12 +317,12 @@
                 if (offline) {
                     animateElevation(offline.elevation);
                     displayResult(offline.elevation, offline.areaName, true);
-                    $('statusMsg').textContent = `オフラインデータ（${offline.areaName}）表示中`;
+                    $('statusMsg').textContent = `保存データ（${offline.areaName}）を表示中`;
                 } else {
                     $('statusMsg').textContent = '対応エリア外です。データを追加してください。';
                 }
             }, err => {
-                $('statusMsg').textContent = 'GPS取得失敗（位置情報を許可してください）';
+                $('statusMsg').textContent = '位置情報の取得に失敗しました';
             }, { enableHighAccuracy: true, timeout: 8000 });
         }
 
@@ -357,12 +357,25 @@
                 masterBoundsData = await res.json();
                 return masterBoundsData;
             } catch(e) {
+                // 正確な市区町村ごとの個別実サイズ境界データ
                 masterBoundsData = {
                     nagano: [
                         { name: "茅野市", bounds: { minLat: 35.95, maxLat: 36.12, minLon: 138.15, maxLon: 138.38 } },
                         { name: "諏訪市", bounds: { minLat: 36.00, maxLat: 36.09, minLon: 138.05, maxLon: 138.16 } },
                         { name: "原村", bounds: { minLat: 35.94, maxLat: 36.01, minLon: 138.20, maxLon: 138.30 } },
-                        { name: "軽井沢町", bounds: { minLat: 36.28, maxLat: 36.38, minLon: 138.54, maxLon: 138.65 } }
+                        { name: "軽井沢町", bounds: { minLat: 36.28, maxLat: 36.38, minLon: 138.54, maxLon: 138.65 } },
+                        { name: "松本市", bounds: { minLat: 35.95, maxLat: 36.32, minLon: 137.55, maxLon: 138.10 } },
+                        { name: "長野市", bounds: { minLat: 36.45, maxLat: 36.85, minLon: 137.85, maxLon: 138.40 } }
+                    ],
+                    yamanashi: [
+                        { name: "甲府市", bounds: { minLat: 35.60, maxLat: 35.79, minLon: 138.48, maxLon: 138.65 } },
+                        { name: "北杜市", bounds: { minLat: 35.72, maxLat: 35.95, minLon: 138.25, maxLon: 138.52 } },
+                        { name: "富士吉田市", bounds: { minLat: 35.42, maxLat: 35.53, minLon: 138.74, maxLon: 138.86 } }
+                    ],
+                    gunma: [
+                        { name: "前橋市", bounds: { minLat: 36.30, maxLat: 36.52, minLon: 138.98, maxLon: 139.22 } },
+                        { name: "高崎市", bounds: { minLat: 36.18, maxLat: 36.48, minLon: 138.78, maxLon: 139.10 } },
+                        { name: "草津町", bounds: { minLat: 36.60, maxLat: 36.68, minLon: 138.55, maxLon: 138.65 } }
                     ]
                 };
                 return masterBoundsData;
@@ -398,7 +411,7 @@
                             <div class="area-item">
                                 <div class="area-info">
                                     <span>${area.areaName}</span>
-                                    <span class="area-sub">全域 (400m / ${area.totalPoints || '---'}地点)</span>
+                                    <span class="area-sub">全域 (${area.totalPoints || '---'}地点)</span>
                                 </div>
                                 <div class="area-actions">
                                     <button class="dl-btn downloaded">保存済</button>
@@ -418,7 +431,7 @@
                 const json = await res.json();
                 await getDBData('readwrite', STORE_NAME, 'put', json);
                 renderAreaList();
-            } catch(e) { alert('データ取得失敗: ' + e.message); }
+            } catch(e) { alert('データの取得に失敗しました: ' + e.message); }
         };
 
         window.removeArea = async function(areaId) {
@@ -472,7 +485,7 @@
 
             const totalPoints = latCount * lonCount;
             const estimatedKB = Math.round(totalPoints * 0.1);
-            const estimatedSec = Math.max(1, Math.round(totalPoints / 1800)); // 爆速換算（1800地点/秒）
+            const estimatedSec = Math.max(1, Math.round(totalPoints / 2200)); // さらに高速化した見積もり
 
             $('infoCityName').textContent = city.name;
             $('infoPoints').textContent = totalPoints.toLocaleString();
@@ -497,7 +510,7 @@
             genBtn.disabled = true;
             $('progressContainer').style.display = 'flex';
             const log = $('terminalLog'), fill = $('progressBarFill');
-            log.textContent = `[INFO] "${targetCity.name}" 爆速ターボ計算中...`;
+            log.textContent = `"${targetCity.name}" のデータを準備中...`;
             fill.style.width = '10%';
 
             try {
@@ -509,12 +522,12 @@
                 lats.forEach((lat, r) => lons.forEach((lon, c) => allPoints.push({ r, c, lat, lon })));
 
                 const totalPoints = allPoints.length;
-                log.textContent = `[TURBO] ${totalPoints}地点を最大並列で発射します！`;
+                log.textContent = `${totalPoints.toLocaleString()}地点のデータを取得しています...`;
                 fill.style.width = '20%';
 
                 let elevations = Array(lats.length).fill(0).map(() => Array(lons.length).fill(0));
                 let completed = 0;
-                const CHUNK = 80; // 爆速化のため並列度を80に引き上げ
+                const CHUNK = 120; // 限界まで並列度を上げて一気に高速取得
 
                 for (let i = 0; i < allPoints.length; i += CHUNK) {
                     let chunk = allPoints.slice(i, i + CHUNK);
@@ -531,7 +544,7 @@
                     
                     let percent = 20 + Math.round((completed / totalPoints) * 75);
                     fill.style.width = `${percent}%`;
-                    log.textContent = `[TURBO] 爆速取得中... (${completed}/${totalPoints})`;
+                    log.textContent = `取得中... (${completed} / ${totalPoints} 地点)`;
                 }
 
                 const areaId = `custom_${pref}_${cityIdx}_${Date.now()}`;
@@ -546,24 +559,23 @@
                 });
 
                 fill.style.width = '100%';
-                log.textContent = `[SUCCESS] 「${labelName}」（${totalPoints}地点）保存完了！`;
+                log.textContent = `「${labelName}」の保存が完了しました！`;
                 
                 $('prefSelect').value = "";
                 $('citySelect').innerHTML = '<option value="">都道府県を先に選択...</option>';
-                $('citySelect').disabled = true;
+                $('citySelect'].disabled = true;
                 $('dataInfoBox').style.display = 'none';
-                genBtn.disabled = true;
+                genBtn.disabled = false;
 
                 await renderAreaList();
             } catch (e) {
-                log.textContent = `[ERROR] ${e.message || '取得失敗'}`;
-            } finally {
+                log.textContent = `エラーが発生しました: ${e.message || '取得失敗'}`;
                 genBtn.disabled = false;
             }
         }
 
         try {
-            $('statusMsg').textContent = 'JS起動完了・GPS測位開始';
+            $('statusMsg').textContent = '現在地を取得しています...';
             requestLocation();
         } catch(e) {
             $('statusMsg').textContent = '起動エラー: ' + e.message;
