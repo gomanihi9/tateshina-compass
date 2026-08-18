@@ -343,4 +343,176 @@
         }
 
         async function loadMasterBounds() {
-            if (masterBoun
+            if (masterBoundsData) return masterBoundsData;
+            try {
+                const targetUrl = getBaseUrl() + 'data/kantou_koushinetsu_bounds.json';
+                const res = await fetch(targetUrl);
+                if (!res.ok) throw new Error("JSON 404 (ファイル未配置)");
+                masterBoundsData = await res.json();
+                return masterBoundsData;
+            } catch(e) {
+                alert('【データ未設定】data/kantou_koushinetsu_bounds.json がありません');
+                return null;
+            }
+        }
+
+        async function renderAreaList() {
+            try {
+                const allSaved = await getDBData('readonly', STORE_NAME, 'getAll') || [];
+                const savedIds = allSaved.map(s => s.areaId);
+                const list = $('areaList');
+                if(!list) return;
+                list.innerHTML = '';
+
+                DEFAULT_AREAS.forEach(area => {
+                    const isDl = savedIds.includes(area.id);
+                    list.innerHTML += `
+                        <div class="area-item">
+                            <span>${area.name}</span>
+                            <div class="area-actions">
+                                <button class="dl-btn ${isDl ? 'downloaded' : ''}" onclick="downloadPreset('${area.id}')">${isDl ? '保存済' : '保存'}</button>
+                                ${isDl ? `<button class="del-btn" onclick="removeArea('${area.id}')">×</button>` : ''}
+                            </div>
+                        </div>`;
+                });
+
+                allSaved.forEach(area => {
+                    if (!DEFAULT_AREAS.some(d => d.id === area.areaId)) {
+                        list.innerHTML += `
+                            <div class="area-item">
+                                <span>${area.areaName}</span>
+                                <div class="area-actions">
+                                    <button class="dl-btn downloaded">保存済</button>
+                                    <button class="del-btn" onclick="removeArea('${area.areaId}')">×</button>
+                                </div>
+                            </div>`;
+                    }
+                });
+            } catch(e) {}
+        }
+
+        window.downloadPreset = async function(id) {
+            try {
+                const targetUrl = getBaseUrl() + `data/${id}.json`;
+                const res = await fetch(targetUrl);
+                if (!res.ok) throw new Error("プリセット未配置");
+                const json = await res.json();
+                await getDBData('readwrite', STORE_NAME, 'put', json);
+                renderAreaList();
+            } catch(e) { alert('データ取得失敗: ' + e.message); }
+        };
+
+        window.removeArea = async function(areaId) {
+            if (confirm('この保存データを削除しますか？')) {
+                await getDBData('readwrite', STORE_NAME, 'delete', areaId);
+                renderAreaList();
+            }
+        };
+
+        async function onPrefChange(pref) {
+            const citySel = $('citySelect');
+            const genBtn = $('generateBtn');
+            citySel.innerHTML = '<option value="">読み込み中...</option>';
+            if (pref) {
+                const master = await loadMasterBounds();
+                citySel.innerHTML = '<option value="">市区町村を選択...</option>';
+                if (master && master[pref]) {
+                    citySel.disabled = false;
+                    master[pref].forEach((city, idx) => {
+                        citySel.innerHTML += `<option value="${idx}">${city.name}</option>`;
+                    });
+                }
+            } else {
+                citySel.innerHTML = '<option value="">都道府県を先に選択...</option>';
+                citySel.disabled = true;
+                genBtn.disabled = true;
+            }
+        }
+
+        function onCityChange(val) {
+            $('generateBtn').disabled = (val === "");
+        }
+
+        async function onGenerateClick() {
+            const prefSel = $('prefSelect');
+            const citySel = $('citySelect');
+            const genBtn = $('generateBtn');
+            const pref = prefSel.value;
+            const cityIdx = citySel.value;
+            if (!pref || cityIdx === "" || !masterBoundsData) return;
+
+            const targetCity = masterBoundsData[pref][parseInt(cityIdx, 10)];
+            const bounds = targetCity.bounds;
+
+            genBtn.disabled = true;
+            $('progressContainer').style.display = 'flex';
+            const log = $('terminalLog'), fill = $('progressBarFill');
+            log.textContent = `[INFO] "${targetCity.name}" メッシュを展開中...`;
+            fill.style.width = '10%';
+
+            try {
+                const MESH = 0.004;
+                let lats = [], lons = [];
+                for (let lat = bounds.minLat; lat <= bounds.maxLat; lat += MESH) lats.push(lat);
+                for (let lon = bounds.minLon; lon <= bounds.maxLon; lon += MESH) lons.push(lon);
+
+                let allPoints = [];
+                lats.forEach((lat, r) => lons.forEach((lon, c) => allPoints.push({ r, c, lat, lon })));
+
+                const totalPoints = allPoints.length;
+                log.textContent = `[TURBO] 総ポイント: ${totalPoints} 地点。取得開始！`;
+                fill.style.width = '25%';
+
+                let elevations = Array(lats.length).fill(0).map(() => Array(lons.length).fill(0));
+                let completed = 0;
+                const CHUNK = 30;
+
+                for (let i = 0; i < allPoints.length; i += CHUNK) {
+                    let chunk = allPoints.slice(i, i + CHUNK);
+                    let results = await Promise.all(chunk.map(async p => {
+                        try {
+                            const res = await fetch(`https://cyberjapandata2.gsi.go.jp/general/dem/scripts/getelevation.php?lon=${p.lon.toFixed(4)}&lat=${p.lat.toFixed(4)}&outtype=JSON`);
+                            const d = await res.json();
+                            return { r: p.r, c: p.c, ele: (d && d.elevation !== "-----") ? Math.round(parseFloat(d.elevation)) : 0 };
+                        } catch(e) { return { r: p.r, c: p.c, ele: 0 }; }
+                    }));
+
+                    results.forEach(res => elevations[res.r][res.c] = res.ele);
+                    completed += chunk.length;
+                    
+                    let percent = 25 + Math.round((completed / totalPoints) * 70);
+                    fill.style.width = `${percent}%`;
+                    log.textContent = `[TURBO] 取得中... (${completed}/${totalPoints})`;
+                }
+
+                const areaId = `custom_${pref}_${cityIdx}_${Date.now()}`;
+                await getDBData('readwrite', STORE_NAME, 'put', { areaId, areaName: targetCity.name, bounds, elevations });
+
+                fill.style.width = '100%';
+                log.textContent = `[SUCCESS] 「${targetCity.name}」のデータを保存しました！`;
+                
+                prefSel.value = "";
+                citySel.innerHTML = '<option value="">都道府県を先に選択...</option>';
+                citySel.disabled = true;
+                genBtn.disabled = true;
+
+                await renderAreaList();
+            } catch (e) {
+                log.textContent = `[ERROR] ${e.message || '取得失敗'}`;
+            } finally {
+                genBtn.disabled = false;
+            }
+        }
+
+        // --- スクリプト読み込みと同時に即時実行（onloadの罠を完全回避） ---
+        try {
+            $('statusMsg').textContent = 'JS起動完了・GPS測位開始';
+            requestLocation();
+        } catch(e) {
+            $('statusMsg').textContent = '起動エラー: ' + e.message;
+        }
+    </script>
+</body>
+</html>
+
+
