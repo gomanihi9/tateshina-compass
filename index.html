@@ -9,8 +9,6 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="蓼科コンパス">
-    <link rel="apple-touch-icon" href="./icon.png">
-    <link rel="manifest" href="./manifest.json">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -66,7 +64,6 @@
         
         /* Modal Styles */
         .modal-overlay { position: fixed; inset: 0; background: rgba(45,42,38,0.5); backdrop-filter: blur(4px); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 16px; }
-        .modal-overlay.active { display: flex !important; }
         .modal-card { background: var(--card); border-radius: var(--radius-lg); width: 100%; max-width: 380px; padding: 24px; display: flex; flex-direction: column; gap: 14px; max-height: 85vh; overflow-y: auto; box-shadow: 0 24px 48px rgba(0,0,0,0.15); }
         .modal-header { display: flex; justify-content: space-between; align-items: center; font-weight: 900; }
         .close-btn { background: none; border: none; font-size: 1.5rem; color: var(--sub); cursor: pointer; padding: 4px 8px; }
@@ -96,7 +93,7 @@
                 <h1 class="app-title">Tateshina Compass</h1>
                 <p class="app-subtitle">信州蓼科 標高ナビゲーター</p>
             </div>
-            <button id="openDlModalBtn" class="icon-btn" title="オフラインデータ管理">
+            <button id="openDlModalBtn" class="icon-btn" onclick="openModal()" title="オフラインデータ管理">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
             </button>
         </header>
@@ -116,7 +113,7 @@
             </div>
 
             <div id="locationTag" class="location-tag">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5-2.5z"/></svg>
                 <span id="locationName">現在地を検索中...</span>
             </div>
 
@@ -143,25 +140,25 @@
                 <div class="coord-item"><span class="coord-label">東経 (LON)</span><span id="lonValue" class="coord-val">---.----</span></div>
             </div>
 
-            <button id="updateBtn" class="primary-btn">現在地を更新する</button>
-            <div id="statusMsg" class="status-msg"></div>
+            <button id="updateBtn" class="primary-btn" onclick="requestLocation()">現在地を更新する</button>
+            <div id="statusMsg" class="status-msg">JS待機中...</div>
         </main>
 
-        <div class="version-badge">COPECK Version Beta 0.1.3-R3</div>
+        <div class="version-badge" id="versionBadge">COPECK Version Beta 0.1.4 (Direct)</div>
     </div>
 
     <div id="dlModal" class="modal-overlay">
         <div class="modal-card">
             <div class="modal-header">
                 <h3>オフラインデータ管理</h3>
-                <button id="closeDlModalBtn" class="close-btn">&times;</button>
+                <button id="closeDlModalBtn" class="close-btn" onclick="closeModal()">&times;</button>
             </div>
             
             <div id="areaList" class="area-list"></div>
 
             <div class="gen-section">
                 <div style="font-size: 0.85rem; font-weight: 800;">🗺️ 関東甲信越から選択して追加</div>
-                <select id="prefSelect" class="form-select">
+                <select id="prefSelect" class="form-select" onchange="onPrefChange(this.value)">
                     <option value="">都道府県を選択...</option>
                     <option value="nagano">長野県</option>
                     <option value="yamanashi">山梨県</option>
@@ -175,7 +172,7 @@
                     <option value="ibaraki">茨城県</option>
                 </select>
 
-                <select id="citySelect" class="form-select" disabled>
+                <select id="citySelect" class="form-select" onchange="onCityChange(this.value)" disabled>
                     <option value="">都道府県を先に選択...</option>
                 </select>
                 
@@ -184,16 +181,25 @@
                     <div id="terminalLog" class="terminal-log">準備完了</div>
                 </div>
 
-                <button id="generateBtn" class="primary-btn" style="padding: 14px; font-size: 0.88rem;" disabled>選択市町村を超高速ターボ取得</button>
+                <button id="generateBtn" class="primary-btn" onclick="onGenerateClick()" style="padding: 14px; font-size: 0.88rem;" disabled>選択市町村を超高速ターボ取得</button>
             </div>
         </div>
     </div>
 
     <script>
-        // エラーログの画面表示用
+        // 1. 古い Service Worker (sw.js) を削除してキャッシュ事故を防止
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                for (let registration of registrations) {
+                    registration.unregister();
+                }
+            }).catch(function(e){});
+        }
+
+        // 2. エラー監視
         window.onerror = function(msg, url, line) {
-            const el = document.getElementById('statusMsg');
-            if(el) el.textContent = `[JS Error] ${msg} (L${line})`;
+            var el = document.getElementById('statusMsg');
+            if (el) el.textContent = '[エラー] ' + msg + ' (L' + line + ')';
             return false;
         };
 
@@ -201,8 +207,8 @@
         let masterBoundsData = null;
 
         function getBaseUrl() {
-            const path = window.location.pathname;
-            const dir = path.substring(0, path.lastIndexOf('/') + 1);
+            var path = window.location.pathname;
+            var dir = path.substring(0, path.lastIndexOf('/') + 1);
             return window.location.origin + dir;
         }
 
@@ -259,6 +265,22 @@
         }
 
         const $ = id => document.getElementById(id);
+
+        // --- モーダル制御（HTMLから直接呼ばれる関数） ---
+        function openModal() {
+            var modal = $('dlModal');
+            if (modal) {
+                modal.style.display = 'flex';
+            }
+            renderAreaList();
+        }
+
+        function closeModal() {
+            var modal = $('dlModal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
 
         function requestLocation() {
             if (!navigator.geolocation) {
@@ -321,23 +343,4 @@
         }
 
         async function loadMasterBounds() {
-            if (masterBoundsData) return masterBoundsData;
-            try {
-                const targetUrl = getBaseUrl() + 'data/kantou_koushinetsu_bounds.json';
-                const res = await fetch(targetUrl);
-                if (!res.ok) throw new Error("JSON 404 (ファイル未配置)");
-                masterBoundsData = await res.json();
-                return masterBoundsData;
-            } catch(e) {
-                alert('【データ未設定】data/kantou_koushinetsu_bounds.json がありません');
-                return null;
-            }
-        }
-
-        async function renderAreaList() {
-            try {
-                const allSaved = await getDBData('readonly', STORE_NAME, 'getAll') || [];
-                const savedIds = allSaved.map(s => s.areaId);
-                const list = $('areaList');
-                if(!list) return;
-  
+            if (masterBoun
