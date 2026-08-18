@@ -117,7 +117,7 @@
             </div>
 
             <div id="locationTag" class="location-tag">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5-2.5z"/></svg>
                 <span id="locationName">現在地を検索中...</span>
             </div>
 
@@ -148,7 +148,7 @@
             <div id="statusMsg" class="status-msg">起動中...</div>
         </main>
 
-        <div class="version-badge" id="versionBadge">COPECK Version Beta 0.1.13</div>
+        <div class="version-badge" id="versionBadge">COPECK Version Beta 0.1.14 (Full Data Linked)</div>
     </div>
 
     <!-- Download Modal -->
@@ -162,7 +162,7 @@
             <div id="areaList" class="area-list"></div>
 
             <div class="gen-section">
-                <div style="font-size: 0.85rem; font-weight: 800;">🗺️ 自治体の広さに最適化されたデータ取得</div>
+                <div style="font-size: 0.85rem; font-weight: 800;">🗺️ エリアデータの取得</div>
                 
                 <select id="prefSelect" class="form-select" onchange="onPrefChange(this.value)">
                     <option value="">都道府県を選択...</option>
@@ -183,8 +183,8 @@
                 </select>
 
                 <div id="dataInfoBox" class="data-info-box">
-                    <div>📊 <span id="infoCityName">-</span> (サイズ最適化済)</div>
-                    <div>• 取得地点数: <span id="infoPoints" style="font-weight:900; color:#d96b43;">-</span> 地点</div>
+                    <div>📊 <span id="infoCityName">-</span> 全域</div>
+                    <div>• 対象地点数: <span id="infoPoints" style="font-weight:900; color:#d96b43;">-</span> 地点</div>
                     <div>• 取得時間の目安: <span id="infoTime">-</span></div>
                 </div>
                 
@@ -199,6 +199,7 @@
     </div>
 
     <script>
+        // PWAのキャッシュ事故防止
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.getRegistrations().then(registrations => {
                 for (let r of registrations) r.unregister();
@@ -212,108 +213,29 @@
         };
 
         const DB_NAME = 'TateshinaCompassDB', DB_VERSION = 1, STORE_NAME = 'offline_grids';
-        const FIXED_MESH_STEP = 0.004; // 400mメッシュ固定
+        const FIXED_MESH_STEP = 0.004;
+        let masterBoundsData = null; // ここに外部JSONのデータが入ります
 
-        // 【個別サイズ最適化版】小さな村（原村等）から大きな市（松本市等）まで、実際の行政規模に応じた固有の正確な境界ボックス
-        const MASTER_BOUNDS = {
-            nagano: [
-                { name: "長野市", bounds: { minLat: 36.45, maxLat: 36.88, minLon: 137.82, maxLon: 138.38 } },
-                { name: "松本市", bounds: { minLat: 35.95, maxLat: 36.35, minLon: 137.52, maxLon: 138.12 } },
-                { name: "上田市", bounds: { minLat: 36.25, maxLat: 36.45, minLon: 138.15, maxLon: 138.48 } },
-                { name: "岡谷市", bounds: { minLat: 36.03, maxLat: 36.10, minLon: 138.00, maxLon: 138.08 } },
-                { name: "飯田市", bounds: { minLat: 35.12, maxLat: 35.50, minLon: 137.68, maxLon: 138.25 } },
-                { name: "諏訪市", bounds: { minLat: 36.00, maxLat: 36.09, minLon: 138.05, maxLon: 138.16 } },
-                { name: "須坂市", bounds: { minLat: 36.55, maxLat: 36.68, minLon: 138.25, maxLon: 138.38 } },
-                { name: "小諸市", bounds: { minLat: 36.28, maxLat: 36.36, minLon: 138.38, maxLon: 138.48 } },
-                { name: "伊那市", bounds: { minLat: 35.75, maxLat: 35.98, minLon: 137.85, maxLon: 138.12 } },
-                { name: "駒ヶ根市", bounds: { minLat: 35.68, maxLat: 35.78, minLon: 137.88, maxLon: 137.98 } },
-                { name: "中野市", bounds: { minLat: 36.70, maxLat: 36.82, minLon: 138.30, maxLon: 138.45 } },
-                { name: "大町市", bounds: { minLat: 36.45, maxLat: 36.62, minLon: 137.65, maxLon: 137.95 } },
-                { name: "飯山市", bounds: { minLat: 36.80, maxLat: 36.95, minLon: 138.32, maxLon: 138.48 } },
-                { name: "茅野市", bounds: { minLat: 35.957, maxLat: 36.125, minLon: 138.158, maxLon: 138.385 } },
-                { name: "塩尻市", bounds: { minLat: 36.02, maxLat: 36.22, minLon: 137.82, maxLon: 138.02 } },
-                { name: "佐久市", bounds: { minLat: 36.12, maxLat: 36.35, minLon: 138.35, maxLon: 138.58 } },
-                { name: "千曲市", bounds: { minLat: 36.45, maxLat: 36.55, minLon: 138.10, maxLon: 138.18 } },
-                { name: "東御市", bounds: { minLat: 36.32, maxLat: 36.42, minLon: 138.32, maxLon: 138.45 } },
-                { name: "安曇野市", bounds: { minLat: 36.22, maxLat: 36.42, minLon: 137.80, maxLon: 137.98 } },
-                { name: "小海町", bounds: { minLat: 36.02, maxLat: 36.12, minLon: 138.42, maxLon: 138.55 } },
-                { name: "軽井沢町", bounds: { minLat: 36.280, maxLat: 36.385, minLon: 138.540, maxLon: 138.655 } },
-                { name: "原村", bounds: { minLat: 35.945, maxLat: 36.012, minLon: 138.205, maxLon: 138.310 } }
-            ],
-            yamanashi: [
-                { name: "甲府市", bounds: { minLat: 35.60, maxLat: 35.79, minLon: 138.48, maxLon: 138.65 } },
-                { name: "富士吉田市", bounds: { minLat: 35.42, maxLat: 35.53, minLon: 138.74, maxLon: 138.86 } },
-                { name: "都留市", bounds: { minLat: 35.50, maxLat: 35.62, minLon: 138.88, maxLon: 138.98 } },
-                { name: "山梨市", bounds: { minLat: 35.65, maxLat: 35.85, minLon: 138.62, maxLon: 138.75 } },
-                { name: "大月市", bounds: { minLat: 35.55, maxLat: 35.68, minLon: 138.85, maxLon: 139.02 } },
-                { name: "韮崎市", bounds: { minLat: 35.68, maxLat: 35.78, minLon: 138.40, maxLon: 138.52 } },
-                { name: "南アルプス市", bounds: { minLat: 35.52, maxLat: 35.72, minLon: 138.35, maxLon: 138.52 } },
-                { name: "北杜市", bounds: { minLat: 35.72, maxLat: 35.95, minLon: 138.25, maxLon: 138.52 } },
-                { name: "甲斐市", bounds: { minLat: 35.62, maxLat: 35.75, minLon: 138.45, maxLon: 138.55 } },
-                { name: "笛吹市", bounds: { minLat: 35.58, maxLat: 35.72, minLon: 138.60, maxLon: 138.72 } },
-                { name: "上野原市", bounds: { minLat: 35.58, maxLat: 35.72, minLon: 139.02, maxLon: 139.18 } },
-                { name: "甲州市", bounds: { minLat: 35.62, maxLat: 35.88, minLon: 138.68, maxLon: 138.88 } },
-                { name: "中央市", bounds: { minLat: 35.55, maxLat: 35.62, minLon: 138.52, maxLon: 138.60 } }
-            ],
-            gunma: [
-                { name: "前橋市", bounds: { minLat: 36.30, maxLat: 36.53, minLon: 138.98, maxLon: 139.23 } },
-                { name: "高崎市", bounds: { minLat: 36.18, maxLat: 36.49, minLon: 138.78, maxLon: 139.12 } },
-                { name: "桐生市", bounds: { minLat: 36.32, maxLat: 36.58, minLon: 139.22, maxLon: 139.42 } },
-                { name: "伊勢崎市", bounds: { minLat: 36.25, maxLat: 36.38, minLon: 139.12, maxLon: 139.28 } },
-                { name: "太田市", bounds: { minLat: 36.22, maxLat: 36.35, minLon: 139.28, maxLon: 139.45 } },
-                { name: "沼田市", bounds: { minLat: 36.58, maxLat: 36.78, minLon: 138.98, maxLon: 139.22 } },
-                { name: "館林市", bounds: { minLat: 36.22, maxLat: 36.28, minLon: 139.50, maxLon: 139.58 } },
-                { name: "渋川市", bounds: { minLat: 36.42, maxLat: 36.58, minLon: 138.92, maxLon: 139.08 } },
-                { name: "藤岡市", bounds: { minLat: 36.15, maxLat: 36.28, minLon: 138.85, maxLon: 139.02 } },
-                { name: "富岡市", bounds: { minLat: 36.18, maxLat: 36.32, minLon: 138.75, maxLon: 138.92 } },
-                { name: "安中市", bounds: { minLat: 36.25, maxLat: 36.38, minLon: 138.72, maxLon: 138.92 } },
-                { name: "みどり市", bounds: { minLat: 36.35, maxLat: 36.55, minLon: 139.25, maxLon: 139.45 } },
-                { name: "草津町", bounds: { minLat: 36.60, maxLat: 36.68, minLon: 138.55, maxLon: 138.65 } }
-            ],
-            tochigi: [
-                { name: "宇都宮市", bounds: { minLat: 36.38, maxLat: 36.63, minLon: 139.78, maxLon: 140.03 } },
-                { name: "足利市", bounds: { minLat: 36.28, maxLat: 36.42, minLon: 139.38, maxLon: 139.55 } },
-                { name: "栃木市", bounds: { minLat: 36.25, maxLat: 36.52, minLon: 139.58, maxLon: 139.82 } },
-                { name: "佐野市", bounds: { minLat: 36.25, maxLat: 36.48, minLon: 139.50, maxLon: 139.72 } },
-                { name: "鹿沼市", bounds: { minLat: 36.45, maxLat: 36.78, minLon: 139.55, maxLon: 139.85 } },
-                { name: "日光市", bounds: { minLat: 36.65, maxLat: 36.98, minLon: 139.35, maxLon: 139.85 } },
-                { name: "小山市", bounds: { minLat: 36.25, maxLat: 36.38, minLon: 139.75, maxLon: 139.88 } },
-                { name: "真岡市", bounds: { minLat: 36.38, maxLat: 36.52, minLon: 139.95, maxLon: 140.08 } },
-                { name: "大田原市", bounds: { minLat: 36.78, maxLat: 36.95, minLon: 139.90, maxLon: 140.18 } },
-                { name: "矢板市", bounds: { minLat: 36.72, maxLat: 36.88, minLon: 139.82, maxLon: 139.98 } },
-                { name: "那須塩原市", bounds: { minLat: 36.88, maxLat: 37.15, minLon: 139.85, maxLon: 140.15 } }
-            ],
-            niigata: [
-                { name: "新潟市", bounds: { minLat: 37.75, maxLat: 38.00, minLon: 138.95, maxLon: 139.38 } },
-                { name: "長岡市", bounds: { minLat: 37.28, maxLat: 37.58, minLon: 138.68, maxLon: 139.05 } },
-                { name: "上越市", bounds: { minLat: 37.02, maxLat: 37.28, minLon: 138.12, maxLon: 138.58 } },
-                { name: "佐渡市", bounds: { minLat: 37.75, maxLat: 38.32, minLon: 138.22, maxLon: 138.65 } }
-            ],
-            saitama: [
-                { name: "さいたま市", bounds: { minLat: 35.82, maxLat: 35.95, minLon: 139.58, maxLon: 139.75 } },
-                { name: "川越市", bounds: { minLat: 35.85, maxLat: 35.98, minLon: 139.38, maxLon: 139.55 } },
-                { name: "秩父市", bounds: { minLat: 35.85, maxLat: 36.08, minLon: 138.85, maxLon: 139.18 } }
-            ],
-            tokyo: [
-                { name: "千代田区", bounds: { minLat: 35.67, maxLat: 35.71, minLon: 139.73, maxLon: 139.78 } },
-                { name: "新宿区", bounds: { minLat: 35.68, maxLat: 35.72, minLon: 139.68, maxLon: 139.74 } },
-                { name: "八王子市", bounds: { minLat: 35.58, maxLat: 35.73, minLon: 139.18, maxLon: 139.38 } },
-                { name: "奥多摩町", bounds: { minLat: 35.75, maxLat: 35.88, minLon: 138.90, maxLon: 139.15 } }
-            ],
-            kanagawa: [
-                { name: "横浜市", bounds: { minLat: 35.35, maxLat: 35.60, minLon: 139.48, maxLon: 139.70 } },
-                { name: "小田原市", bounds: { minLat: 35.22, maxLat: 35.35, minLon: 139.05, maxLon: 139.22 } },
-                { name: "箱根町", bounds: { minLat: 35.18, maxLat: 35.28, minLon: 139.00, maxLon: 139.08 } }
-            ],
-            chiba: [
-                { name: "千葉市", bounds: { minLat: 35.48, maxLat: 35.70, minLon: 139.98, maxLon: 140.32 } },
-                { name: "館山市", bounds: { minLat: 34.95, maxLat: 35.05, minLon: 139.82, maxLon: 139.98 } }
-            ],
-            ibaraki: [
-                { name: "水戸市", bounds: { minLat: 36.32, maxLat: 36.43, minLon: 140.38, maxLon: 140.53 } },
-                { name: "つくば市", bounds: { minLat: 36.00, maxLat: 36.18, minLon: 140.00, maxLon: 140.18 } }
-            ]
-        };
+        function getBaseUrl() {
+            var path = window.location.pathname;
+            var dir = path.substring(0, path.lastIndexOf('/') + 1);
+            return window.location.origin + dir;
+        }
+
+        // --- あなたが作った kantou_koushinetsu_bounds.json を読み込む ---
+        async function loadMasterBounds() {
+            if (masterBoundsData) return masterBoundsData;
+            try {
+                const targetUrl = getBaseUrl() + 'data/kantou_koushinetsu_bounds.json';
+                const res = await fetch(targetUrl);
+                if (!res.ok) throw new Error("JSON 404");
+                masterBoundsData = await res.json();
+                return masterBoundsData;
+            } catch(e) {
+                alert('エリアデータ(JSON)の読み込みに失敗しました。');
+                return null;
+            }
+        }
 
         function openDB() {
             return new Promise((resolve, reject) => {
@@ -472,7 +394,7 @@
                             <div class="area-item">
                                 <div class="area-info">
                                     <span>${area.areaName}</span>
-                                    <span class="area-sub">最適化エリア (${area.totalPoints || '---'}地点)</span>
+                                    <span class="area-sub">全域 (${area.totalPoints ? area.totalPoints.toLocaleString() : '---'}地点)</span>
                                 </div>
                                 <div class="area-actions">
                                     <button class="dl-btn downloaded">保存済</button>
@@ -504,18 +426,26 @@
             }
         };
 
-        function onPrefChange(pref) {
+        async function onPrefChange(pref) {
             const citySel = $('citySelect');
             const genBtn = $('generateBtn');
             const infoBox = $('dataInfoBox');
-            citySel.innerHTML = '<option value="">市区町村を選択...</option>';
+            citySel.innerHTML = '<option value="">読み込み中...</option>';
             infoBox.style.display = 'none';
 
-            if (pref && MASTER_BOUNDS[pref]) {
-                citySel.disabled = false;
-                MASTER_BOUNDS[pref].forEach((city, idx) => {
-                    citySel.innerHTML += `<option value="${idx}">${city.name}</option>`;
-                });
+            if (pref) {
+                // 外部JSONデータを確実にフェッチして使用
+                const master = await loadMasterBounds();
+                citySel.innerHTML = '<option value="">市区町村を選択...</option>';
+                if (master && master[pref]) {
+                    citySel.disabled = false;
+                    master[pref].forEach((city, idx) => {
+                        citySel.innerHTML += `<option value="${idx}">${city.name}</option>`;
+                    });
+                } else {
+                    citySel.innerHTML = '<option value="">データが見つかりません</option>';
+                    citySel.disabled = true;
+                }
             } else {
                 citySel.innerHTML = '<option value="">都道府県を先に選択...</option>';
                 citySel.disabled = true;
@@ -529,13 +459,13 @@
             const genBtn = $('generateBtn');
             const infoBox = $('dataInfoBox');
 
-            if (!pref || cityIdx === "" || !MASTER_BOUNDS[pref] || !MASTER_BOUNDS[pref][cityIdx]) {
+            if (!pref || cityIdx === "" || !masterBoundsData || !masterBoundsData[pref][cityIdx]) {
                 genBtn.disabled = true;
                 infoBox.style.display = 'none';
                 return;
             }
 
-            const city = MASTER_BOUNDS[pref][cityIdx];
+            const city = masterBoundsData[pref][cityIdx];
             const bounds = city.bounds;
 
             let latCount = 0, lonCount = 0;
@@ -543,6 +473,7 @@
             for (let lon = bounds.minLon; lon <= bounds.maxLon; lon += FIXED_MESH_STEP) lonCount++;
 
             const totalPoints = latCount * lonCount;
+            // リクエスト速度を考慮した見積もり（約2500件/秒換算）
             const estimatedSec = Math.max(1, Math.round(totalPoints / 2500));
 
             $('infoCityName').textContent = city.name;
@@ -558,9 +489,9 @@
             const cityIdx = $('citySelect').value;
             const genBtn = $('generateBtn');
             
-            if (!pref || cityIdx === "") return;
+            if (!pref || cityIdx === "" || !masterBoundsData) return;
 
-            const targetCity = MASTER_BOUNDS[pref][parseInt(cityIdx, 10)];
+            const targetCity = masterBoundsData[pref][parseInt(cityIdx, 10)];
             const bounds = targetCity.bounds;
             const step = FIXED_MESH_STEP;
 
@@ -568,16 +499,17 @@
             $('progressContainer').style.display = 'flex';
             const log = $('terminalLog'), fill = $('progressBarFill');
             
+            // スムーズに進むように見せる演出
             const startingLogs = [
-                `"${targetCity.name}" の最適サイズ範囲を計算中...`,
-                `400mメッシュグリッドを展開しています...`,
-                `ハイパー並列セッションを構築中...`
+                `"${targetCity.name}" のエリア範囲を計算中...`,
+                `座標グリッドの構築を実行しています...`,
+                `データサーバーへの接続を確立中...`
             ];
             
             for(let i=0; i<startingLogs.length; i++) {
                 log.textContent = startingLogs[i];
                 fill.style.width = `${(i + 1) * 6}%`;
-                await new Promise(r => setTimeout(r, 90));
+                await new Promise(r => setTimeout(r, 100));
             }
 
             try {
@@ -589,12 +521,12 @@
                 lats.forEach((lat, r) => lons.forEach((lon, c) => allPoints.push({ r, c, lat, lon })));
 
                 const totalPoints = allPoints.length;
-                log.textContent = `${totalPoints.toLocaleString()}地点のデータを高速取得中...`;
+                log.textContent = `${totalPoints.toLocaleString()}地点のデータを取得開始...`;
                 fill.style.width = '25%';
 
                 let elevations = Array(lats.length).fill(0).map(() => Array(lons.length).fill(0));
                 let completed = 0;
-                const CHUNK = 160;
+                const CHUNK = 160; // 並列度を高く維持
 
                 for (let i = 0; i < allPoints.length; i += CHUNK) {
                     let chunk = allPoints.slice(i, i + CHUNK);
@@ -620,10 +552,10 @@
 
                 log.textContent = `データを本体ストレージへ保存中...`;
                 fill.style.width = '95%';
-                await new Promise(r => setTimeout(r, 120));
+                await new Promise(r => setTimeout(r, 150));
 
                 const areaId = `custom_${pref}_${cityIdx}_${Date.now()}`;
-                const labelName = targetCity.name + "エリア";
+                const labelName = targetCity.name + "全域";
                 await getDBData('readwrite', STORE_NAME, 'put', { 
                     areaId, 
                     areaName: labelName, 
@@ -658,4 +590,5 @@
     </script>
 </body>
 </html>
+
 
