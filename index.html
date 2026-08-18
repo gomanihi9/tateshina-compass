@@ -667,4 +667,468 @@
 
             <button id="updateBtn" class="primary-btn">
                 <svg id="refreshIcon" class="btn-icon" viewBox="0 0 24 24">
-                    <path d="M12 8c
+                    <path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/>
+                </svg>
+                <svg id="spinnerIcon" class="btn-icon spinner" viewBox="0 0 24 24">
+                    <path d="M12 4V2A10 10 0 0 0 2 12h2a8 8 0 0 1 8-8z"/>
+                </svg>
+                <span id="btnText">現在地を更新する</span>
+            </button>
+
+            <div id="statusMsg" class="status-msg"></div>
+        </main>
+
+        <div class="version-badge">COPECK Version 1.0.0 (Stable)</div>
+        <footer class="footer">出典: 国土地理院 標高API / オフラインデータ</footer>
+    </div>
+
+    <!-- Release Notice Modal -->
+    <div id="noticeModal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2 class="modal-title">📢 v1.0 アップデートのお知らせ</h2>
+            </div>
+            <div class="notice-body">
+                <p>こんにちは。架空会社COPECK代表のKOSUKEです。</p>
+                <p>この度GPS標高確認アプリ「Tateshina Compass」v1.0を公開しました！このアップデートでは、現在地の標高を確認するアプリとして最低限必要な機能を備えました。</p>
+                <p>前バージョンからの変更点は、</p>
+                <ul class="notice-list">
+                    <li><b>①オフラインでの動作</b><br>右上のダウンロードマークからオフラインデータをダウンロードすると、電波の繋がらないところでも使えます。</li>
+                    <li><b>②酸素の実質濃度表示</b></li>
+                    <li><b>③その他修正点</b></li>
+                </ul>
+                <p>です。これからもこのアプリをよろしくお願いします！</p>
+            </div>
+            <button id="closeNoticeBtn" class="primary-btn" style="margin-top: 8px;">了解しました</button>
+        </div>
+    </div>
+
+    <!-- Offline Download Modal -->
+    <div id="dlModal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2 class="modal-title">オフラインエリアデータ</h2>
+                <button id="closeDlModalBtn" class="close-btn">&times;</button>
+            </div>
+            
+            <div id="areaList" class="area-list">
+                <!-- Area Items JS Injected -->
+            </div>
+
+            <!-- Download Confirm Box -->
+            <div id="confirmBox" class="confirm-dialog" style="display:none;">
+                <div id="confirmText" class="confirm-text"></div>
+                <div class="confirm-actions">
+                    <button id="cancelDlBtn" class="sub-btn">キャンセル</button>
+                    <button id="execDlBtn" class="dl-btn">ダウンロード実行</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Standalone & Browser Landing Check ---
+        let deferredPrompt = null;
+
+        function checkStandaloneMode() {
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+            const landing = document.getElementById('browserLanding');
+            
+            if (!isStandalone) {
+                landing.style.display = 'flex';
+            } else {
+                landing.style.display = 'none';
+            }
+        }
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+        });
+
+        document.getElementById('installAppBtn').addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    deferredPrompt = null;
+                }
+            } else {
+                alert('お使いのブラウザまたはデバイスでは、ブラウザメニューから「ホーム画面に追加」または「アプリをインストール」を選択してください。');
+            }
+        });
+
+        // --- Release Notice Logic (v1.0 First Boot Check) ---
+        const NOTICE_VERSION_KEY = 'copeck_tateshina_notice_v100';
+
+        function checkReleaseNotice() {
+            const hasSeen = localStorage.getItem(NOTICE_VERSION_KEY);
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+            
+            if (!hasSeen && isStandalone) {
+                document.getElementById('noticeModal').classList.add('active');
+            }
+        }
+
+        document.getElementById('closeNoticeBtn').addEventListener('click', () => {
+            localStorage.setItem(NOTICE_VERSION_KEY, 'true');
+            document.getElementById('noticeModal').classList.remove('active');
+        });
+
+        // --- IndexedDB for Offline Grid Storage ---
+        const DB_NAME = 'TateshinaCompassDB';
+        const DB_VERSION = 1;
+        const STORE_NAME = 'offline_grids';
+
+        function openDB() {
+            return new Promise((resolve, reject) => {
+                const req = indexedDB.open(DB_NAME, DB_VERSION);
+                req.onupgradeneeded = (e) => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains(STORE_NAME)) {
+                        db.createObjectStore(STORE_NAME, { keyPath: 'areaId' });
+                    }
+                };
+                req.onsuccess = () => resolve(req.result);
+                req.onerror = () => reject(req.error);
+            });
+        }
+
+        async function saveOfflineGrid(areaData) {
+            const db = await openDB();
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction(STORE_NAME, 'readwrite');
+                const store = tx.objectStore(STORE_NAME);
+                store.put(areaData);
+                tx.oncomplete = () => resolve();
+                tx.onerror = () => reject(tx.error);
+            });
+        }
+
+        async function getSavedAreaIds() {
+            const db = await openDB();
+            return new Promise((resolve) => {
+                const tx = db.transaction(STORE_NAME, 'readonly');
+                const store = tx.objectStore(STORE_NAME);
+                const req = store.getAllKeys();
+                req.onsuccess = () => resolve(req.result || []);
+                req.onerror = () => resolve([]);
+            });
+        }
+
+        async function searchOfflineElevation(lat, lon) {
+            const db = await openDB();
+            return new Promise((resolve) => {
+                const tx = db.transaction(STORE_NAME, 'readonly');
+                const store = tx.objectStore(STORE_NAME);
+                const req = store.getAll();
+                req.onsuccess = () => {
+                    const allGrids = req.result || [];
+                    for (let area of allGrids) {
+                        const b = area.bounds;
+                        if (lat >= b.minLat && lat <= b.maxLat && lon >= b.minLon && lon <= b.maxLon) {
+                            const MESH_STEP = 0.004;
+                            const r = Math.round((lat - b.minLat) / MESH_STEP);
+                            const c = Math.round((lon - b.minLon) / MESH_STEP);
+                            if (area.elevations[r] && area.elevations[r][c] !== undefined) {
+                                resolve({
+                                    elevation: area.elevations[r][c],
+                                    areaName: area.areaName
+                                });
+                                return;
+                            }
+                        }
+                    }
+                    resolve(null);
+                };
+                req.onerror = () => resolve(null);
+            });
+        }
+
+        // --- Area Metadata ---
+        const AREA_METADATA = [
+            { id: 'chino', name: '茅野市エリア' },
+            { id: 'suwa', name: '諏訪市エリア' },
+            { id: 'haramura', name: '原村エリア' },
+            { id: 'karuizawa', name: '軽井沢町エリア' }
+        ];
+
+        async function fetchFileSize(areaId) {
+            try {
+                const res = await fetch(`./data/${areaId}.json`, { method: 'HEAD' });
+                const sizeBytes = res.headers.get('content-length');
+                if (sizeBytes) {
+                    const kb = (parseInt(sizeBytes, 10) / 1024).toFixed(1);
+                    return `約 ${kb} KB`;
+                }
+            } catch (e) {}
+            return 'サイズ確認中';
+        }
+
+        // --- PWA Service Worker ---
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js', { scope: './' }).catch(console.error);
+            });
+        }
+
+        // --- DOM Elements ---
+        const elevationValue = document.getElementById('elevationValue');
+        const elevationPrefix = document.getElementById('elevationPrefix');
+        const oxygenValue = document.getElementById('oxygenValue');
+        const latValue = document.getElementById('latValue');
+        const lonValue = document.getElementById('lonValue');
+        const locationName = document.getElementById('locationName');
+        const locationTag = document.getElementById('locationTag');
+        const updateBtn = document.getElementById('updateBtn');
+        const btnText = document.getElementById('btnText');
+        const refreshIcon = document.getElementById('refreshIcon');
+        const spinnerIcon = document.getElementById('spinnerIcon');
+        const statusMsg = document.getElementById('statusMsg');
+        
+        const openDlModalBtn = document.getElementById('openDlModalBtn');
+        const closeDlModalBtn = document.getElementById('closeDlModalBtn');
+        const dlModal = document.getElementById('dlModal');
+        const areaList = document.getElementById('areaList');
+        const confirmBox = document.getElementById('confirmBox');
+        const confirmText = document.getElementById('confirmText');
+        const cancelDlBtn = document.getElementById('cancelDlBtn');
+        const execDlBtn = document.getElementById('execDlBtn');
+
+        const STORAGE_KEY = 'copeck_tateshina_last_data';
+        let pendingDlArea = null;
+
+        // --- Oxygen Calculation ---
+        function calculateOxygenRatio(elevationMeters) {
+            if (elevationMeters <= 0) return 100.0;
+            const pressure = 1013.25 * Math.pow((1 - (0.0065 * elevationMeters) / 288.15), 5.2558);
+            const ratio = (pressure / 1013.25) * 100;
+            return ratio.toFixed(1);
+        }
+
+        // --- Location & Elevation Logic ---
+        function requestCurrentLocation() {
+            if (!navigator.geolocation) {
+                setStatus('位置情報非対応端末です', true);
+                loadLastSavedData();
+                return;
+            }
+
+            setLoading(true);
+            setStatus('GPS測位中...');
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+                    processCoordinate(lat, lon);
+                },
+                (error) => {
+                    setLoading(false);
+                    console.warn('GPS Error/Offline:', error);
+                    fallbackOfflineSearch(null, null);
+                },
+                { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+            );
+        }
+
+        async function processCoordinate(lat, lon) {
+            latValue.textContent = lat.toFixed(4);
+            lonValue.textContent = lon.toFixed(4);
+
+            if (navigator.onLine) {
+                setStatus('国土地理院API照会中...');
+                const url = `https://cyberjapandata2.gsi.go.jp/general/dem/scripts/getelevation.php?lon=${lon}&lat=${lat}&outtype=JSON`;
+                try {
+                    const response = await fetch(url);
+                    if (!response.ok) throw new Error('API Error');
+                    const data = await response.json();
+
+                    if (data && data.elevation !== undefined && data.elevation !== "-----") {
+                        const ele = parseFloat(data.elevation);
+                        displayElevation(ele, '現在地', false);
+                        saveCurrentData(ele, lat, lon, '現在地');
+                        setStatus('標高を取得しました');
+                        setLoading(false);
+                        return;
+                    }
+                } catch (e) {
+                    console.warn('API fetch failed:', e);
+                }
+            }
+
+            fallbackOfflineSearch(lat, lon);
+        }
+
+        async function fallbackOfflineSearch(lat, lon) {
+            if (lat !== null && lon !== null) {
+                setStatus('オフラインデータ照会中...');
+                const offlineResult = await searchOfflineElevation(lat, lon);
+                if (offlineResult) {
+                    displayElevation(offlineResult.elevation, `${offlineResult.areaName}`, true);
+                    setStatus(`オフラインデータ（${offlineResult.areaName}）から表示中`);
+                    setLoading(false);
+                    return;
+                }
+            }
+
+            loadLastSavedData();
+            setLoading(false);
+        }
+
+        function displayElevation(ele, name, isOfflineGrid = false) {
+            elevationPrefix.style.display = isOfflineGrid ? 'inline' : 'none';
+            animateElevation(ele);
+            
+            locationName.textContent = name;
+            locationTag.classList.toggle('is-offline', isOfflineGrid || !navigator.onLine);
+
+            const oxygen = calculateOxygenRatio(ele);
+            oxygenValue.textContent = `${oxygen} %`;
+        }
+
+        function saveCurrentData(elevation, lat, lon, name) {
+            const cacheData = {
+                elevation: elevation,
+                lat: lat,
+                lon: lon,
+                name: name,
+                timestamp: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })
+            };
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(cacheData));
+            } catch (e) {}
+        }
+
+        function loadLastSavedData() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    elevationPrefix.style.display = 'none';
+                    elevationValue.textContent = Math.round(data.elevation).toLocaleString();
+                    latValue.textContent = data.lat.toFixed(4);
+                    lonValue.textContent = data.lon.toFixed(4);
+                    locationName.textContent = `前回の保存データ (${data.timestamp})`;
+                    locationTag.classList.add('is-offline');
+                    
+                    const oxygen = calculateOxygenRatio(data.elevation);
+                    oxygenValue.textContent = `${oxygen} %`;
+                    setStatus('オフライン・前回値を表示中', true);
+                } else {
+                    setStatus('データがありません。オンラインで取得してください。', true);
+                }
+            } catch (e) {}
+        }
+
+        function animateElevation(target) {
+            const start = parseFloat(elevationValue.textContent) || 0;
+            const duration = 800;
+            const startTime = performance.now();
+
+            function update(time) {
+                const elapsed = time - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const ease = progress * (2 - progress);
+                const current = start + (target - start) * ease;
+
+                elevationValue.textContent = Math.round(current).toLocaleString();
+                if (progress < 1) requestAnimationFrame(update);
+            }
+            requestAnimationFrame(update);
+        }
+
+        function setLoading(isLoading) {
+            updateBtn.disabled = isLoading;
+            refreshIcon.style.display = isLoading ? 'none' : 'block';
+            spinnerIcon.style.display = isLoading ? 'block' : 'none';
+            btnText.textContent = isLoading ? '取得中...' : '現在地を更新する';
+        }
+
+        function setStatus(msg, isError = false) {
+            statusMsg.textContent = msg;
+            statusMsg.style.color = isError ? 'var(--error-text)' : 'var(--accent-color)';
+        }
+
+        // --- Modal & Download UI Logic ---
+        openDlModalBtn.addEventListener('click', async () => {
+            await renderAreaList();
+            dlModal.classList.add('active');
+        });
+
+        closeDlModalBtn.addEventListener('click', () => {
+            dlModal.classList.remove('active');
+            confirmBox.style.display = 'none';
+        });
+
+        async function renderAreaList() {
+            const downloadedIds = await getSavedAreaIds();
+            areaList.innerHTML = '';
+
+            for (let area of AREA_METADATA) {
+                const isDownloaded = downloadedIds.includes(area.id);
+                const realSizeText = await fetchFileSize(area.id);
+                area.sizeText = realSizeText;
+
+                const item = document.createElement('div');
+                item.className = 'area-item';
+                item.innerHTML = `
+                    <div class="area-info">
+                        <span class="area-name">${area.name}</span>
+                        <span class="area-size">${realSizeText}</span>
+                    </div>
+                    <button class="dl-btn ${isDownloaded ? 'downloaded' : ''}" data-id="${area.id}">
+                        ${isDownloaded ? '済' : '保存'}
+                    </button>
+                `;
+                
+                const btn = item.querySelector('.dl-btn');
+                if (!isDownloaded) {
+                    btn.addEventListener('click', () => promptDownload(area));
+                }
+                areaList.appendChild(item);
+            }
+        }
+
+        function promptDownload(area) {
+            pendingDlArea = area;
+            confirmText.textContent = `「${area.name}」（容量: ${area.sizeText}）をダウンロードしてオフラインで利用できるようにしますか？`;
+            confirmBox.style.display = 'flex';
+        }
+
+        cancelDlBtn.addEventListener('click', () => {
+            confirmBox.style.display = 'none';
+            pendingDlArea = null;
+        });
+
+        execDlBtn.addEventListener('click', async () => {
+            if (!pendingDlArea) return;
+            execDlBtn.disabled = true;
+            execDlBtn.textContent = '取得中...';
+
+            try {
+                const response = await fetch(`./data/${pendingDlArea.id}.json`);
+                if (!response.ok) throw new Error('Download failed');
+                const areaJson = await response.json();
+                
+                await saveOfflineGrid(areaJson);
+                confirmBox.style.display = 'none';
+                await renderAreaList();
+            } catch (e) {
+                alert('ダウンロードに失敗しました。');
+            } finally {
+                execDlBtn.disabled = false;
+                execDlBtn.textContent = 'ダウンロード実行';
+                pendingDlArea = null;
+            }
+        });
+
+        updateBtn.addEventListener('click', requestCurrentLocation);
+        window.addEventListener('load', () => {
+            checkStandaloneMode();
+            checkReleaseNotice();
+            requestCurrentLocation();
+        });
+    </script>
+</body>
+</html>
