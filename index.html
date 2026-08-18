@@ -64,12 +64,14 @@
         
         /* Modal Styles */
         .modal-overlay { position: fixed; inset: 0; background: rgba(45,42,38,0.5); backdrop-filter: blur(4px); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 16px; }
-        .modal-card { background: var(--card); border-radius: var(--radius-lg); width: 100%; max-width: 380px; padding: 24px; display: flex; flex-direction: column; gap: 14px; max-height: 85vh; overflow-y: auto; box-shadow: 0 24px 48px rgba(0,0,0,0.15); }
+        .modal-card { background: var(--card); border-radius: var(--radius-lg); width: 100%; max-width: 400px; padding: 24px; display: flex; flex-direction: column; gap: 14px; max-height: 85vh; overflow-y: auto; box-shadow: 0 24px 48px rgba(0,0,0,0.15); }
         .modal-header { display: flex; justify-content: space-between; align-items: center; font-weight: 900; }
         .close-btn { background: none; border: none; font-size: 1.5rem; color: var(--sub); cursor: pointer; padding: 4px 8px; }
         
-        .area-list { display: flex; flex-direction: column; gap: 8px; max-height: 180px; overflow-y: auto; }
-        .area-item { background: var(--bg); border-radius: var(--radius-md); padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border); font-size: 0.9rem; font-weight: 700; }
+        .area-list { display: flex; flex-direction: column; gap: 8px; max-height: 160px; overflow-y: auto; }
+        .area-item { background: var(--bg); border-radius: var(--radius-md); padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border); font-size: 0.85rem; font-weight: 700; }
+        .area-info { display: flex; flex-direction: column; }
+        .area-sub { font-size: 0.7rem; color: var(--sub); font-weight: 600; margin-top: 2px; }
         .area-actions { display: flex; gap: 6px; align-items: center; }
         
         .dl-btn { background: var(--accent); color: #fff; border: none; border-radius: 20px; padding: 6px 12px; font-size: 0.75rem; font-weight: 800; cursor: pointer; }
@@ -77,11 +79,13 @@
         .del-btn { background: #ffcdd2; color: #c62828; border: none; border-radius: 50%; width: 28px; height: 28px; font-size: 0.85rem; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 
         .gen-section { border-top: 1px solid var(--border); padding-top: 12px; display: flex; flex-direction: column; gap: 10px; }
-        .form-select { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); font-size: 0.9rem; outline: none; font-weight: 700; color: var(--text); }
+        .form-select { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); font-size: 0.88rem; outline: none; font-weight: 700; color: var(--text); }
+        
+        .data-info-box { background: #f0f7ff; border: 1px solid #b3d8ff; border-radius: 10px; padding: 10px 12px; font-size: 0.78rem; font-weight: 700; color: #0056b3; display: none; flex-direction: column; gap: 4px; }
         
         .progress-container { display: none; flex-direction: column; gap: 6px; width: 100%; }
         .progress-bar-bg { width: 100%; height: 8px; background: var(--bg); border-radius: 4px; overflow: hidden; border: 1px solid var(--border); }
-        .progress-bar-fill { width: 0%; height: 100%; background: linear-gradient(90deg, #d96b43, #ff8a65); transition: width 0.15s ease; border-radius: 4px; }
+        .progress-bar-fill { width: 0%; height: 100%; background: linear-gradient(90deg, #d96b43, #ff8a65); transition: width 0.1s linear; border-radius: 4px; }
         .terminal-log { background: #1e1b18; color: #a9dc76; font-family: monospace; font-size: 0.7rem; padding: 8px 10px; border-radius: 8px; max-height: 60px; overflow-y: auto; line-height: 1.4; }
     </style>
 </head>
@@ -144,7 +148,7 @@
             <div id="statusMsg" class="status-msg">JS待機中...</div>
         </main>
 
-        <div class="version-badge" id="versionBadge">COPECK Version Beta 0.1.4 (Direct)</div>
+        <div class="version-badge" id="versionBadge">COPECK Version Beta 0.1.8 (Max Turbo Speed)</div>
     </div>
 
     <div id="dlModal" class="modal-overlay">
@@ -157,7 +161,8 @@
             <div id="areaList" class="area-list"></div>
 
             <div class="gen-section">
-                <div style="font-size: 0.85rem; font-weight: 800;">🗺️ 関東甲信越から選択して追加</div>
+                <div style="font-size: 0.85rem; font-weight: 800;">🗺️ 各自治体の広さにフィットした全域取得 (400m固定)</div>
+                
                 <select id="prefSelect" class="form-select" onchange="onPrefChange(this.value)">
                     <option value="">都道府県を選択...</option>
                     <option value="nagano">長野県</option>
@@ -172,31 +177,33 @@
                     <option value="ibaraki">茨城県</option>
                 </select>
 
-                <select id="citySelect" class="form-select" onchange="onCityChange(this.value)" disabled>
+                <select id="citySelect" class="form-select" onchange="updateDataEstimate()" disabled>
                     <option value="">都道府県を先に選択...</option>
                 </select>
+
+                <div id="dataInfoBox" class="data-info-box">
+                    <div>📊 <span id="infoCityName">-</span> 全域 (400mメッシュ)</div>
+                    <div>• 取得地点数: <span id="infoPoints" style="font-weight:900; color:#d96b43;">-</span> 地点</div>
+                    <div>• 予想サイズ: <span id="infoSize">-</span> KB / 爆速目安: <span id="infoTime">-</span></div>
+                </div>
                 
                 <div id="progressContainer" class="progress-container">
                     <div class="progress-bar-bg"><div id="progressBarFill" class="progress-bar-fill"></div></div>
                     <div id="terminalLog" class="terminal-log">準備完了</div>
                 </div>
 
-                <button id="generateBtn" class="primary-btn" onclick="onGenerateClick()" style="padding: 14px; font-size: 0.88rem;" disabled>選択市町村を超高速ターボ取得</button>
+                <button id="generateBtn" class="primary-btn" onclick="onGenerateClick()" style="padding: 14px; font-size: 0.88rem;" disabled>全域データを限界突破ターボ取得</button>
             </div>
         </div>
     </div>
 
     <script>
-        // 1. 古い Service Worker (sw.js) を削除してキャッシュ事故を防止
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.getRegistrations().then(function(registrations) {
-                for (let registration of registrations) {
-                    registration.unregister();
-                }
-            }).catch(function(e){});
+            navigator.serviceWorker.getRegistrations().then(registrations => {
+                for (let r of registrations) r.unregister();
+            }).catch(e => {});
         }
 
-        // 2. エラー監視
         window.onerror = function(msg, url, line) {
             var el = document.getElementById('statusMsg');
             if (el) el.textContent = '[エラー] ' + msg + ' (L' + line + ')';
@@ -204,6 +211,7 @@
         };
 
         const DB_NAME = 'TateshinaCompassDB', DB_VERSION = 1, STORE_NAME = 'offline_grids';
+        const FIXED_MESH_STEP = 0.004; // 400mメッシュ完全固定
         let masterBoundsData = null;
 
         function getBaseUrl() {
@@ -238,8 +246,10 @@
         }
 
         const DEFAULT_AREAS = [
-            { id: 'chino', name: '茅野市エリア' }, { id: 'suwa', name: '諏訪市エリア' },
-            { id: 'haramura', name: '原村エリア' }, { id: 'karuizawa', name: '軽井沢町エリア' }
+            { id: 'chino', name: '茅野市エリア', sub: '約 1,800 地点 (~180KB)' },
+            { id: 'suwa', name: '諏訪市エリア', sub: '約 900 地点 (~90KB)' },
+            { id: 'haramura', name: '原村エリア', sub: '約 450 地点 (~45KB)' },
+            { id: 'karuizawa', name: '軽井沢町エリア', sub: '約 1,100 地点 (~110KB)' }
         ];
 
         function calculateOxygen(elevation) {
@@ -252,9 +262,10 @@
                 const grids = await getDBData('readonly', STORE_NAME, 'getAll');
                 for (let area of (grids || [])) {
                     const b = area.bounds;
+                    const step = area.step || FIXED_MESH_STEP;
                     if (lat >= b.minLat && lat <= b.maxLat && lon >= b.minLon && lon <= b.maxLon) {
-                        const r = Math.round((lat - b.minLat) / 0.004);
-                        const c = Math.round((lon - b.minLon) / 0.004);
+                        const r = Math.round((lat - b.minLat) / step);
+                        const c = Math.round((lon - b.minLon) / step);
                         if (area.elevations && area.elevations[r] && area.elevations[r][c] !== undefined) {
                             return { elevation: area.elevations[r][c], areaName: area.areaName };
                         }
@@ -266,20 +277,15 @@
 
         const $ = id => document.getElementById(id);
 
-        // --- モーダル制御（HTMLから直接呼ばれる関数） ---
         function openModal() {
             var modal = $('dlModal');
-            if (modal) {
-                modal.style.display = 'flex';
-            }
+            if (modal) modal.style.display = 'flex';
             renderAreaList();
         }
 
         function closeModal() {
             var modal = $('dlModal');
-            if (modal) {
-                modal.style.display = 'none';
-            }
+            if (modal) modal.style.display = 'none';
         }
 
         function requestLocation() {
@@ -347,12 +353,19 @@
             try {
                 const targetUrl = getBaseUrl() + 'data/kantou_koushinetsu_bounds.json';
                 const res = await fetch(targetUrl);
-                if (!res.ok) throw new Error("JSON 404 (ファイル未配置)");
+                if (!res.ok) throw new Error("JSON 404");
                 masterBoundsData = await res.json();
                 return masterBoundsData;
             } catch(e) {
-                alert('【データ未設定】data/kantou_koushinetsu_bounds.json がありません');
-                return null;
+                masterBoundsData = {
+                    nagano: [
+                        { name: "茅野市", bounds: { minLat: 35.95, maxLat: 36.12, minLon: 138.15, maxLon: 138.38 } },
+                        { name: "諏訪市", bounds: { minLat: 36.00, maxLat: 36.09, minLon: 138.05, maxLon: 138.16 } },
+                        { name: "原村", bounds: { minLat: 35.94, maxLat: 36.01, minLon: 138.20, maxLon: 138.30 } },
+                        { name: "軽井沢町", bounds: { minLat: 36.28, maxLat: 36.38, minLon: 138.54, maxLon: 138.65 } }
+                    ]
+                };
+                return masterBoundsData;
             }
         }
 
@@ -368,7 +381,10 @@
                     const isDl = savedIds.includes(area.id);
                     list.innerHTML += `
                         <div class="area-item">
-                            <span>${area.name}</span>
+                            <div class="area-info">
+                                <span>${area.name}</span>
+                                <span class="area-sub">${area.sub}</span>
+                            </div>
                             <div class="area-actions">
                                 <button class="dl-btn ${isDl ? 'downloaded' : ''}" onclick="downloadPreset('${area.id}')">${isDl ? '保存済' : '保存'}</button>
                                 ${isDl ? `<button class="del-btn" onclick="removeArea('${area.id}')">×</button>` : ''}
@@ -380,7 +396,10 @@
                     if (!DEFAULT_AREAS.some(d => d.id === area.areaId)) {
                         list.innerHTML += `
                             <div class="area-item">
-                                <span>${area.areaName}</span>
+                                <div class="area-info">
+                                    <span>${area.areaName}</span>
+                                    <span class="area-sub">全域 (400m / ${area.totalPoints || '---'}地点)</span>
+                                </div>
                                 <div class="area-actions">
                                     <button class="dl-btn downloaded">保存済</button>
                                     <button class="del-btn" onclick="removeArea('${area.areaId}')">×</button>
@@ -412,7 +431,10 @@
         async function onPrefChange(pref) {
             const citySel = $('citySelect');
             const genBtn = $('generateBtn');
+            const infoBox = $('dataInfoBox');
             citySel.innerHTML = '<option value="">読み込み中...</option>';
+            infoBox.style.display = 'none';
+
             if (pref) {
                 const master = await loadMasterBounds();
                 citySel.innerHTML = '<option value="">市区町村を選択...</option>';
@@ -429,43 +451,70 @@
             }
         }
 
-        function onCityChange(val) {
-            $('generateBtn').disabled = (val === "");
+        function updateDataEstimate() {
+            const pref = $('prefSelect').value;
+            const cityIdx = $('citySelect').value;
+            const genBtn = $('generateBtn');
+            const infoBox = $('dataInfoBox');
+
+            if (!pref || cityIdx === "" || !masterBoundsData || !masterBoundsData[pref][cityIdx]) {
+                genBtn.disabled = true;
+                infoBox.style.display = 'none';
+                return;
+            }
+
+            const city = masterBoundsData[pref][cityIdx];
+            const bounds = city.bounds;
+
+            let latCount = 0, lonCount = 0;
+            for (let lat = bounds.minLat; lat <= bounds.maxLat; lat += FIXED_MESH_STEP) latCount++;
+            for (let lon = bounds.minLon; lon <= bounds.maxLon; lon += FIXED_MESH_STEP) lonCount++;
+
+            const totalPoints = latCount * lonCount;
+            const estimatedKB = Math.round(totalPoints * 0.1);
+            const estimatedSec = Math.max(1, Math.round(totalPoints / 1800)); // 爆速換算（1800地点/秒）
+
+            $('infoCityName').textContent = city.name;
+            $('infoPoints').textContent = totalPoints.toLocaleString();
+            $('infoSize').textContent = estimatedKB.toLocaleString();
+            $('infoTime').textContent = `約 ${estimatedSec} 秒`;
+
+            infoBox.style.display = 'flex';
+            genBtn.disabled = false;
         }
 
         async function onGenerateClick() {
-            const prefSel = $('prefSelect');
-            const citySel = $('citySelect');
+            const pref = $('prefSelect').value;
+            const cityIdx = $('citySelect').value;
             const genBtn = $('generateBtn');
-            const pref = prefSel.value;
-            const cityIdx = citySel.value;
+            
             if (!pref || cityIdx === "" || !masterBoundsData) return;
 
             const targetCity = masterBoundsData[pref][parseInt(cityIdx, 10)];
             const bounds = targetCity.bounds;
+            const step = FIXED_MESH_STEP;
 
             genBtn.disabled = true;
             $('progressContainer').style.display = 'flex';
             const log = $('terminalLog'), fill = $('progressBarFill');
-            log.textContent = `[INFO] "${targetCity.name}" メッシュを展開中...`;
+            log.textContent = `[INFO] "${targetCity.name}" 爆速ターボ計算中...`;
             fill.style.width = '10%';
 
             try {
-                const MESH = 0.004;
                 let lats = [], lons = [];
-                for (let lat = bounds.minLat; lat <= bounds.maxLat; lat += MESH) lats.push(lat);
-                for (let lon = bounds.minLon; lon <= bounds.maxLon; lon += MESH) lons.push(lon);
+                for (let lat = bounds.minLat; lat <= bounds.maxLat; lat += step) lats.push(lat);
+                for (let lon = bounds.minLon; lon <= bounds.maxLon; lon += step) lons.push(lon);
 
                 let allPoints = [];
                 lats.forEach((lat, r) => lons.forEach((lon, c) => allPoints.push({ r, c, lat, lon })));
 
                 const totalPoints = allPoints.length;
-                log.textContent = `[TURBO] 総ポイント: ${totalPoints} 地点。取得開始！`;
-                fill.style.width = '25%';
+                log.textContent = `[TURBO] ${totalPoints}地点を最大並列で発射します！`;
+                fill.style.width = '20%';
 
                 let elevations = Array(lats.length).fill(0).map(() => Array(lons.length).fill(0));
                 let completed = 0;
-                const CHUNK = 30;
+                const CHUNK = 80; // 爆速化のため並列度を80に引き上げ
 
                 for (let i = 0; i < allPoints.length; i += CHUNK) {
                     let chunk = allPoints.slice(i, i + CHUNK);
@@ -480,20 +529,29 @@
                     results.forEach(res => elevations[res.r][res.c] = res.ele);
                     completed += chunk.length;
                     
-                    let percent = 25 + Math.round((completed / totalPoints) * 70);
+                    let percent = 20 + Math.round((completed / totalPoints) * 75);
                     fill.style.width = `${percent}%`;
-                    log.textContent = `[TURBO] 取得中... (${completed}/${totalPoints})`;
+                    log.textContent = `[TURBO] 爆速取得中... (${completed}/${totalPoints})`;
                 }
 
                 const areaId = `custom_${pref}_${cityIdx}_${Date.now()}`;
-                await getDBData('readwrite', STORE_NAME, 'put', { areaId, areaName: targetCity.name, bounds, elevations });
+                const labelName = targetCity.name + "全域";
+                await getDBData('readwrite', STORE_NAME, 'put', { 
+                    areaId, 
+                    areaName: labelName, 
+                    bounds, 
+                    step, 
+                    totalPoints,
+                    elevations 
+                });
 
                 fill.style.width = '100%';
-                log.textContent = `[SUCCESS] 「${targetCity.name}」のデータを保存しました！`;
+                log.textContent = `[SUCCESS] 「${labelName}」（${totalPoints}地点）保存完了！`;
                 
-                prefSel.value = "";
-                citySel.innerHTML = '<option value="">都道府県を先に選択...</option>';
-                citySel.disabled = true;
+                $('prefSelect').value = "";
+                $('citySelect').innerHTML = '<option value="">都道府県を先に選択...</option>';
+                $('citySelect').disabled = true;
+                $('dataInfoBox').style.display = 'none';
                 genBtn.disabled = true;
 
                 await renderAreaList();
@@ -504,7 +562,6 @@
             }
         }
 
-        // --- スクリプト読み込みと同時に即時実行（onloadの罠を完全回避） ---
         try {
             $('statusMsg').textContent = 'JS起動完了・GPS測位開始';
             requestLocation();
