@@ -220,6 +220,15 @@
     </div>
 
     <script>
+        // 初回起動時（Stable 1.1 未読判定）に自動でアップデート通知を表示
+        window.addEventListener('DOMContentLoaded', () => {
+            const seenVersion = localStorage.getItem('seen_stable_version');
+            if (seenVersion !== '1.1') {
+                openUpdateModal();
+                localStorage.setItem('seen_stable_version', '1.1');
+            }
+        });
+
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.getRegistrations().then(registrations => {
                 for (let r of registrations) r.unregister();
@@ -560,7 +569,7 @@
                     let percent = 15 + Math.round((completed / totalPoints) * 80);
                     fill.style.width = `${percent}%`;
                     
-                    // --- ご要望通り正確に「30地点ごと」にログを更新 ---
+                    // --- 正確に30地点ごとにログを細かく更新 ---
                     if (completed % 30 < CHUNK || completed >= totalPoints) {
                         log.textContent = `高速取得中... (${completed} / ${totalPoints} 地点完了)`;
                         log.scrollTop = log.scrollHeight;
