@@ -5,10 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Tateshina Compass</title>
     
+    <!-- PWA & WebAPK 設定 -->
     <meta name="theme-color" content="#f5f0eb">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="蓼科コンパス">
+    <link rel="apple-touch-icon" href="./icon.png">
+    <link rel="manifest" href="./manifest.json">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -220,7 +223,6 @@
     </div>
 
     <script>
-        // 初回起動時（Stable 1.1 未読判定）に自動でアップデート通知を表示
         window.addEventListener('DOMContentLoaded', () => {
             const seenVersion = localStorage.getItem('seen_stable_version');
             if (seenVersion !== '1.1') {
@@ -569,7 +571,6 @@
                     let percent = 15 + Math.round((completed / totalPoints) * 80);
                     fill.style.width = `${percent}%`;
                     
-                    // --- 正確に30地点ごとにログを細かく更新 ---
                     if (completed % 30 < CHUNK || completed >= totalPoints) {
                         log.textContent = `高速取得中... (${completed} / ${totalPoints} 地点完了)`;
                         log.scrollTop = log.scrollHeight;
