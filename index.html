@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Tateshina Compass</title>
     
-    <!-- PWA & WebAPK 設定 -->
     <meta name="theme-color" content="#f5f0eb">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -92,8 +91,16 @@
         .progress-bar-fill { width: 0%; height: 100%; background: linear-gradient(90deg, #d96b43, #ff8a65); transition: width 0.05s linear; border-radius: 4px; }
         .terminal-log { background: #1e1b18; color: #a9dc76; font-family: monospace; font-size: 0.7rem; padding: 8px 10px; border-radius: 8px; max-height: 65px; overflow-y: auto; line-height: 1.4; }
 
-        /* Update Notice Modal */
         .notice-text { font-size: 0.88rem; line-height: 1.6; color: var(--text); white-space: pre-line; }
+
+        /* App Store Style PWA Install Banner */
+        .store-banner { display: flex; align-items: center; gap: 14px; background: #faf6f0; border: 1px solid var(--border); border-radius: 18px; padding: 14px; margin-bottom: 4px; }
+        .store-icon { width: 56px; height: 56px; background: var(--accent); border-radius: 14px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 900; font-size: 1.4rem; box-shadow: 0 6px 16px rgba(217,107,67,0.3); flex-shrink: 0; }
+        .store-info { flex-grow: 1; display: flex; flex-direction: column; gap: 2px; }
+        .store-name { font-size: 0.95rem; font-weight: 900; }
+        .store-desc { font-size: 0.72rem; color: var(--sub); line-height: 1.3; }
+        .store-install-btn { background: #2d2a26; color: #fff; border: none; border-radius: 20px; padding: 8px 14px; font-size: 0.75rem; font-weight: 800; cursor: pointer; flex-shrink: 0; }
+        .guide-steps { font-size: 0.82rem; line-height: 1.5; color: var(--text); background: var(--bg); padding: 12px; border-radius: 12px; border: 1px solid var(--border); }
     </style>
 </head>
 <body>
@@ -204,13 +211,30 @@
         </div>
     </div>
 
-    <!-- Update Notice Modal (Stable 1.1) -->
+    <!-- Update Notice Modal (Stable 1.1 + App Store PWA Guide) -->
     <div id="updateModal" class="modal-overlay">
         <div class="modal-card">
             <div class="modal-header">
                 <h3>📢 Stable 1.1 アップデートのお知らせ</h3>
                 <button class="close-btn" onclick="closeUpdateModal()">&times;</button>
             </div>
+
+            <!-- App Store風 インストール案内バナー -->
+            <div class="store-banner">
+                <div class="store-icon">🧭</div>
+                <div class="store-info">
+                    <div class="store-name">Tateshina Compass</div>
+                    <div class="store-desc">ホーム画面に追加してアプリとして快適に動作！</div>
+                </div>
+                <button id="installAppBtn" class="store-install-btn" style="display:none;" onclick="triggerInstall()">インストール</button>
+            </div>
+
+            <div id="pwaGuideBox" class="guide-steps">
+                📱 <b>ホーム画面に追加する方法：</b><br>
+                • <b>iPhone (Safari):</b> 画面下の共有ボタン ［ ⎋ ］ を押し、<b>「ホーム画面に追加」</b>を選択してください。<br>
+                • <b>Android (Chrome):</b> 右上のメニュー ［ ⋮ ］ を押し、<b>「アプリをインストール」</b>または<b>「ホーム画面に追加」</b>を選択してください。
+            </div>
+
             <div class="notice-text">こんにちは、架空会社COPECK代表のKOSUKEです。
 この度マイナーアップデートStable 1.1を公開しました。このアップデートではオフラインデータ機能の改良を行いました。
 
@@ -223,6 +247,28 @@
     </div>
 
     <script>
+        let deferredPrompt = null;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            const btn = $('installAppBtn');
+            if(btn) btn.style.display = 'block';
+        });
+
+        function triggerInstall() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        closeUpdateModal();
+                    }
+                    deferredPrompt = null;
+                });
+            } else {
+                alert('ブラウザのメニューから「ホーム画面に追加」を選択してください。');
+            }
+        }
+
         window.addEventListener('DOMContentLoaded', () => {
             const seenVersion = localStorage.getItem('seen_stable_version');
             if (seenVersion !== '1.1') {
