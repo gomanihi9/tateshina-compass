@@ -93,10 +93,11 @@
 
         .notice-text { font-size: 0.88rem; line-height: 1.6; color: var(--text); white-space: pre-line; }
 
-        /* App Store Style Landing (Browser Force Enforced) */
+        /* App Store Style Landing (Browser Only) */
         #storeLanding {
             position: fixed; inset: 0; background: #ffffff; z-index: 99999;
-            display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+            display: none; /* デフォルトは非表示、JSでブラウザ判定時に表示 */
+            flex-direction: column; align-items: center; justify-content: space-between;
             padding: 40px 24px; text-align: center; overflow-y: auto;
         }
         .store-header { display: flex; flex-direction: column; align-items: center; gap: 14px; margin-top: 10px; width: 100%; }
@@ -114,7 +115,7 @@
 </head>
 <body>
 
-    <!-- ブラウザ直アクセス時に強制表示するストア風ランディング画面 -->
+    <!-- ブラウザ直アクセス時に強制表示するストア風ブロック画面 -->
     <div id="storeLanding">
         <div class="store-header">
             <img src="./icon.png" class="store-app-icon" alt="App Icon" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2222%22 fill=%22%23d96b43%22/><text x=%2250%22 y=%2262%22 font-size=%2245%22 text-anchor=%22middle%22 fill=%22white%22>🧭</text></svg>'">
@@ -296,12 +297,12 @@
             }
         }
 
-        // --- PWA（ホーム画面追加アプリ）として起動したかどうかの判定 ---
+        // --- PWA判定ロジック（完全切り替え） ---
         window.addEventListener('DOMContentLoaded', () => {
             const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
             
             if (isPWA) {
-                // PWA起動ならストア風画面を即座に削除してアプリを全開
+                // 【PWA起動】ストア画面を即座に削除し、いきなりアプリ画面を表示
                 const landing = $('storeLanding');
                 if (landing) landing.remove();
 
@@ -312,7 +313,7 @@
                     localStorage.setItem('seen_stable_version', '1.1');
                 }
             } else {
-                // 通常ブラウザアクセスならストア風画面を維持してロック
+                // 【通常ブラウザ起動】ストア画面を強制表示してアプリを開かせない
                 const landing = $('storeLanding');
                 if (landing) landing.style.display = 'flex';
             }
