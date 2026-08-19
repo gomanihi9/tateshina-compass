@@ -93,33 +93,33 @@
 
         .notice-text { font-size: 0.88rem; line-height: 1.6; color: var(--text); white-space: pre-line; }
 
-        /* App Store Style Landing Overlay */
+        /* App Store Style Landing (Browser Force Enforced) */
         #storeLanding {
-            position: fixed; inset: 0; background: #ffffff; z-index: 9999;
+            position: fixed; inset: 0; background: #ffffff; z-index: 99999;
             display: flex; flex-direction: column; align-items: center; justify-content: space-between;
             padding: 40px 24px; text-align: center; overflow-y: auto;
         }
-        .store-header { display: flex; flex-direction: column; align-items: center; gap: 16px; margin-top: 20px; }
-        .store-app-icon { width: 96px; height: 96px; border-radius: 22px; box-shadow: 0 12px 32px rgba(0,0,0,0.12); object-fit: cover; }
-        .store-app-title { font-size: 1.6rem; font-weight: 900; color: #1d1d1f; letter-spacing: -0.02em; }
-        .store-app-dev { font-size: 0.85rem; color: var(--sub); font-weight: 700; margin-top: -10px; }
-        .store-badges { display: flex; gap: 12px; margin: 10px 0; }
-        .store-badge { background: #f5f5f7; padding: 6px 14px; border-radius: 8px; font-size: 0.75rem; font-weight: 800; color: #333; }
-        .store-get-btn { background: #0071e3; color: white; border: none; border-radius: 24px; padding: 12px 40px; font-size: 1rem; font-weight: 800; cursor: pointer; box-shadow: 0 4px 16px rgba(0,113,227,0.3); transition: transform 0.2s; }
-        .store-get-btn:active { transform: scale(0.95); }
-        .store-desc-box { background: #fbfbfd; border: 1px solid #e5e5ea; border-radius: 16px; padding: 20px; width: 100%; max-width: 380px; text-align: left; display: flex; flex-direction: column; gap: 10px; }
-        .store-desc-title { font-size: 0.9rem; font-weight: 900; color: #1d1d1f; }
-        .store-desc-text { font-size: 0.82rem; line-height: 1.6; color: #515154; }
+        .store-header { display: flex; flex-direction: column; align-items: center; gap: 14px; margin-top: 10px; width: 100%; }
+        .store-app-icon { width: 88px; height: 88px; border-radius: 20px; box-shadow: 0 10px 28px rgba(0,0,0,0.12); object-fit: cover; }
+        .store-app-title { font-size: 1.5rem; font-weight: 900; color: #1d1d1f; letter-spacing: -0.02em; }
+        .store-app-dev { font-size: 0.8rem; color: var(--sub); font-weight: 700; margin-top: -8px; }
+        .store-badges { display: flex; gap: 8px; margin: 6px 0; flex-wrap: wrap; justify-content: center; }
+        .store-badge { background: #f5f5f7; padding: 5px 12px; border-radius: 8px; font-size: 0.72rem; font-weight: 800; color: #333; }
+        .store-get-btn { background: #0071e3; color: white; border: none; border-radius: 24px; padding: 12px 36px; font-size: 0.95rem; font-weight: 800; cursor: pointer; box-shadow: 0 4px 16px rgba(0,113,227,0.3); width: 100%; max-width: 280px; }
+        .store-desc-box { background: #fbfbfd; border: 1px solid #e5e5ea; border-radius: 16px; padding: 16px; width: 100%; max-width: 380px; text-align: left; display: flex; flex-direction: column; gap: 8px; }
+        .store-desc-title { font-size: 0.85rem; font-weight: 900; color: #1d1d1f; }
+        .store-desc-text { font-size: 0.78rem; line-height: 1.5; color: #515154; }
+        .store-guide-box { background: #fff8f0; border: 1px solid #f2c5bb; border-radius: 14px; padding: 14px; width: 100%; max-width: 380px; text-align: left; font-size: 0.78rem; line-height: 1.5; color: #2d2a26; }
     </style>
 </head>
 <body>
 
-    <!-- App Store風 ランディング画面（ブラウザ直アクセス時に表示） -->
+    <!-- ブラウザ直アクセス時に強制表示するストア風ランディング画面 -->
     <div id="storeLanding">
         <div class="store-header">
             <img src="./icon.png" class="store-app-icon" alt="App Icon" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2222%22 fill=%22%23d96b43%22/><text x=%2250%22 y=%2262%22 font-size=%2245%22 text-anchor=%22middle%22 fill=%22white%22>🧭</text></svg>'">
             <h1 class="store-app-title">Tateshina Compass</h1>
-            <div class="store-dev">架空会社COPECK</div>
+            <div class="store-app-dev">架空会社COPECK</div>
             
             <div class="store-badges">
                 <span class="store-badge">Version 1.1</span>
@@ -127,17 +127,23 @@
                 <span class="store-badge">オフライン対応</span>
             </div>
 
-            <button id="storeMainBtn" class="store-get-btn" onclick="dismissStoreLanding()">アプリを開く</button>
+            <button id="installAppBtn" class="store-get-btn" style="display:none;" onclick="triggerInstall()">アプリをインストール</button>
+        </div>
+
+        <div class="store-guide-box">
+            📱 <b>ホーム画面に追加してアプリ起動：</b><br>
+            • <b>iPhone (Safari):</b> 下部メニューの共有 ［ ⎋ ］ ➔ <b>「ホーム画面に追加」</b><br>
+            • <b>Android (Chrome):</b> 右上メニュー ［ ⋮ ］ ➔ <b>「ホーム画面に追加」</b>または<b>「アプリをインストール」</b>
         </div>
 
         <div class="store-desc-box">
-            <div class="store-desc-title">新機能 (Stable 1.1)</div>
+            <div class="store-desc-title">アプリ概要 (Stable 1.1)</div>
             <div class="store-desc-text">
-                プリセットに加え、関東甲信越すべての都道府県・市区町村のオフラインデータをその場で生成・保存できるようになりました。電波の届かない山岳エリアでも標高と実質酸素濃度を正確にナビゲートします。
+                信州蓼科および関東甲信越の全市区町村に対応した高精度標高・実質酸素濃度ナビゲーター。電波の届かない山間部でも、オフラインで現在地を完全に把握できます。
             </div>
         </div>
 
-        <div style="font-size: 0.72rem; color: var(--sub); padding-bottom: 10px;">
+        <div style="font-size: 0.7rem; color: var(--sub); padding-bottom: 5px;">
             © 2026 架空会社COPECK. All rights reserved.
         </div>
     </div>
@@ -267,21 +273,50 @@
     </div>
 
     <script>
-        // ストア風ランディングを閉じてアプリを開く
-        function dismissStoreLanding() {
-            const landing = document.getElementById('storeLanding');
-            if (landing) {
-                landing.style.opacity = '0';
-                landing.style.transition = 'opacity 0.3s ease';
-                setTimeout(() => landing.remove(), 300);
-            }
-            // 初回起動時ならアップデートダイアログも一緒にチェック
-            const seenVersion = localStorage.getItem('seen_stable_version');
-            if (seenVersion !== '1.1') {
-                setTimeout(openUpdateModal, 400);
-                localStorage.setItem('seen_stable_version', '1.1');
+        let deferredPrompt = null;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            const btn = $('installAppBtn');
+            if(btn) btn.style.display = 'block';
+        });
+
+        function triggerInstall() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        const landing = $('storeLanding');
+                        if(landing) landing.remove();
+                    }
+                    deferredPrompt = null;
+                });
+            } else {
+                alert('お使いのブラウザメニューから「ホーム画面に追加」または「アプリをインストール」を選択してください。');
             }
         }
+
+        // --- PWA（ホーム画面追加アプリ）として起動したかどうかの判定 ---
+        window.addEventListener('DOMContentLoaded', () => {
+            const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+            
+            if (isPWA) {
+                // PWA起動ならストア風画面を即座に削除してアプリを全開
+                const landing = $('storeLanding');
+                if (landing) landing.remove();
+
+                // 初回起動時ならアップデートダイアログを表示
+                const seenVersion = localStorage.getItem('seen_stable_version');
+                if (seenVersion !== '1.1') {
+                    openUpdateModal();
+                    localStorage.setItem('seen_stable_version', '1.1');
+                }
+            } else {
+                // 通常ブラウザアクセスならストア風画面を維持してロック
+                const landing = $('storeLanding');
+                if (landing) landing.style.display = 'flex';
+            }
+        });
 
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.getRegistrations().then(registrations => {
