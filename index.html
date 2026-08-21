@@ -3,12 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tateshina Compass</title>
+    <title>Tateshina Compass Beta 0.2.0</title>
     
     <meta name="theme-color" content="#f5f0eb">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="蓼科コンパス">
+    <link rel="apple-touch-icon" href="./icon.png">
+    <link rel="manifest" href="./manifest.json">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -19,6 +21,7 @@
             --bg: #f5f0eb; --card: #ffffff; --text: #2d2a26; --sub: #7a756e;
             --accent: #d96b43; --accent-hover: #c45a32; --accent-light: #fceee9;
             --offline-bg: #eae3d9; --border: #e6dfd5; --radius-lg: 24px; --radius-md: 16px;
+            --green: #2e7d32; --green-light: #eef7ff;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -28,7 +31,8 @@
         .app-title { font-size: 1.8rem; font-weight: 900; text-transform: uppercase; line-height: 1; letter-spacing: -0.03em; }
         .app-subtitle { font-size: 0.8rem; font-weight: 600; color: var(--sub); margin-top: 4px; letter-spacing: 0.05em; }
         
-        .icon-btn { background: var(--card); border: 1px solid var(--border); border-radius: 50%; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.04); transition: transform 0.2s; }
+        .header-actions { display: flex; gap: 8px; }
+        .icon-btn { background: var(--card); border: 1px solid var(--border); border-radius: 50%; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.04); transition: transform 0.2s; font-size: 1.2rem; }
         .icon-btn:active { transform: scale(0.9); }
         
         .card { background: var(--card); border-radius: var(--radius-lg); padding: 28px 24px; box-shadow: 0 16px 40px rgba(45,42,38,0.08); display: flex; flex-direction: column; align-items: center; border: 1px solid rgba(255,255,255,0.9); position: relative; }
@@ -50,7 +54,7 @@
         .oxygen-title { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; font-weight: 800; color: #2e7d32; }
         .oxygen-value { font-size: 1.1rem; font-weight: 900; color: #1b5e20; }
         
-        .coords-box { background: var(--bg); border-radius: var(--radius-md); padding: 12px 16px; width: 100%; display: flex; justify-content: space-around; align-items: center; margin-bottom: 20px; border: 1px solid var(--border); }
+        .coords-box { background: var(--bg); border-radius: var(--radius-md); padding: 12px 16px; width: 100%; display: flex; justify-content: space-around; align-items: center; margin-bottom: 16px; border: 1px solid var(--border); }
         .coord-item { display: flex; flex-direction: column; align-items: center; }
         .coord-label { font-size: 0.68rem; font-weight: 700; color: var(--sub); }
         .coord-val { font-size: 0.9rem; font-weight: 700; margin-top: 2px; }
@@ -59,11 +63,15 @@
         .primary-btn:active { transform: scale(0.96); background: var(--accent-hover); }
         .primary-btn:disabled { background: #ccbdaf; box-shadow: none; cursor: not-allowed; }
         
+        .secondary-btn { background: #2d2a26; color: #fff; border: none; border-radius: var(--radius-md); width: 100%; padding: 14px; font-size: 0.9rem; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 8px; box-shadow: 0 6px 16px rgba(45,42,38,0.15); }
+        .secondary-btn:active { transform: scale(0.96); }
+
         .status-msg { font-size: 0.8rem; font-weight: 700; margin-top: 12px; text-align: center; color: var(--accent); min-height: 1.2em; word-break: break-all; }
-        .version-badge { font-size: 0.7rem; font-weight: 700; color: #b0a89e; text-align: center; margin-top: 12px; }
+        .version-badge { font-size: 0.7rem; font-weight: 700; color: #b0a89e; text-align: center; margin-top: 12px; cursor: pointer; text-decoration: underline; }
         
         /* Modal Styles */
         .modal-overlay { position: fixed; inset: 0; background: rgba(45,42,38,0.5); backdrop-filter: blur(4px); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 16px; }
+        .modal-overlay.active { display: flex; }
         .modal-card { background: var(--card); border-radius: var(--radius-lg); width: 100%; max-width: 400px; padding: 24px; display: flex; flex-direction: column; gap: 14px; max-height: 85vh; overflow-y: auto; box-shadow: 0 24px 48px rgba(0,0,0,0.15); }
         .modal-header { display: flex; justify-content: space-between; align-items: center; font-weight: 900; }
         .close-btn { background: none; border: none; font-size: 1.5rem; color: var(--sub); cursor: pointer; padding: 4px 8px; }
@@ -79,7 +87,8 @@
         .del-btn { background: #ffcdd2; color: #c62828; border: none; border-radius: 50%; width: 28px; height: 28px; font-size: 0.85rem; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 
         .gen-section { border-top: 1px solid var(--border); padding-top: 12px; display: flex; flex-direction: column; gap: 10px; }
-        .form-select { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); font-size: 0.88rem; outline: none; font-weight: 700; color: var(--text); }
+        .form-select, .form-input, .form-textarea { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); font-size: 0.88rem; outline: none; font-weight: 700; color: var(--text); font-family: inherit; }
+        .form-textarea { resize: vertical; min-height: 70px; }
         
         .data-info-box { background: #f0f7ff; border: 1px solid #b3d8ff; border-radius: 10px; padding: 10px 12px; font-size: 0.78rem; font-weight: 700; color: #0056b3; display: none; flex-direction: column; gap: 4px; }
         
@@ -87,9 +96,79 @@
         .progress-bar-bg { width: 100%; height: 8px; background: var(--bg); border-radius: 4px; overflow: hidden; border: 1px solid var(--border); }
         .progress-bar-fill { width: 0%; height: 100%; background: linear-gradient(90deg, #d96b43, #ff8a65); transition: width 0.05s linear; border-radius: 4px; }
         .terminal-log { background: #1e1b18; color: #a9dc76; font-family: monospace; font-size: 0.7rem; padding: 8px 10px; border-radius: 8px; max-height: 65px; overflow-y: auto; line-height: 1.4; }
+
+        .notice-text { font-size: 0.88rem; line-height: 1.6; color: var(--text); white-space: pre-line; }
+
+        /* Store Landing (Browser Block) */
+        #storeLanding {
+            position: fixed; inset: 0; background: #ffffff; z-index: 99999;
+            display: none; flex-direction: column; align-items: center; justify-content: space-between;
+            padding: 40px 24px; text-align: center; overflow-y: auto;
+        }
+        .store-header { display: flex; flex-direction: column; align-items: center; gap: 14px; margin-top: 10px; width: 100%; }
+        .store-app-icon { width: 88px; height: 88px; border-radius: 20px; box-shadow: 0 10px 28px rgba(0,0,0,0.12); object-fit: cover; }
+        .store-app-title { font-size: 1.5rem; font-weight: 900; color: #1d1d1f; letter-spacing: -0.02em; }
+        .store-app-dev { font-size: 0.8rem; color: var(--sub); font-weight: 700; margin-top: -8px; }
+        .store-badges { display: flex; gap: 8px; margin: 6px 0; flex-wrap: wrap; justify-content: center; }
+        .store-badge { background: #f5f5f7; padding: 5px 12px; border-radius: 8px; font-size: 0.72rem; font-weight: 800; color: #333; }
+        .store-get-btn { background: #0071e3; color: white; border: none; border-radius: 24px; padding: 12px 36px; font-size: 0.95rem; font-weight: 800; cursor: pointer; box-shadow: 0 4px 16px rgba(0,113,227,0.3); width: 100%; max-width: 280px; }
+        .store-desc-box { background: #fbfbfd; border: 1px solid #e5e5ea; border-radius: 16px; padding: 16px; width: 100%; max-width: 380px; text-align: left; display: flex; flex-direction: column; gap: 8px; }
+        .store-desc-title { font-size: 0.85rem; font-weight: 900; color: #1d1d1f; }
+        .store-desc-text { font-size: 0.78rem; line-height: 1.5; color: #515154; }
+        .store-guide-box { background: #fff8f0; border: 1px solid #f2c5bb; border-radius: 14px; padding: 14px; width: 100%; max-width: 380px; text-align: left; font-size: 0.78rem; line-height: 1.5; color: #2d2a26; }
+
+        /* Photo Upload & Note UI */
+        .photo-picker { border: 2px dashed var(--border); border-radius: 12px; padding: 16px; text-align: center; background: var(--bg); cursor: pointer; position: relative; }
+        .photo-preview { width: 100%; max-height: 180px; object-fit: cover; border-radius: 10px; display: none; margin-top: 8px; }
+        .map-preview-box { background: #e8ecef; border: 1px solid var(--border); border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 4px; font-size: 0.78rem; font-weight: 700; color: var(--sub); }
+        .map-mock { width: 100%; height: 90px; background: #c8d6e5; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #576574; font-size: 0.8rem; font-weight: 800; background-image: radial-gradient(#8395a7 1px, transparent 1px); background-size: 10px 10px; }
+
+        /* Logs Timeline Modal */
+        .logs-list { display: flex; flex-direction: column; gap: 12px; max-height: 60vh; overflow-y: auto; }
+        .log-card { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 14px; display: flex; flex-direction: column; gap: 8px; }
+        .log-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+        .log-date { font-size: 0.72rem; color: var(--sub); font-weight: 700; }
+        .log-ele { font-size: 1.2rem; font-weight: 900; color: var(--accent); }
+        .log-img { width: 100%; max-height: 160px; object-fit: cover; border-radius: 8px; margin-top: 4px; }
+        .log-text { font-size: 0.85rem; font-weight: 700; color: var(--text); line-height: 1.4; white-space: pre-wrap; }
+        .log-footer { display: flex; justify-content: space-between; align-items: center; font-size: 0.7rem; color: var(--sub); margin-top: 4px; }
     </style>
 </head>
 <body>
+
+    <!-- ブラウザ直アクセス時に強制表示するストア風ブロック画面 -->
+    <div id="storeLanding">
+        <div class="store-header">
+            <img src="./icon.png" class="store-app-icon" alt="App Icon" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2222%22 fill=%22%23d96b43%22/><text x=%2250%22 y=%2262%22 font-size=%2245%22 text-anchor=%22middle%22 fill=%22white%22>🧭</text></svg>'">
+            <h1 class="store-app-title">Tateshina Compass</h1>
+            <div class="store-app-dev">架空会社COPECK</div>
+            
+            <div class="store-badges">
+                <span class="store-badge">Version 0.2.0 Beta</span>
+                <span class="store-badge">山旅ログ</span>
+                <span class="store-badge">オフラインナビ</span>
+            </div>
+
+            <button id="installAppBtn" class="store-get-btn" style="display:none;" onclick="triggerInstall()">アプリをインストール</button>
+        </div>
+
+        <div class="store-guide-box">
+            📱 <b>ホーム画面に追加してアプリ起動：</b><br>
+            • <b>iPhone (Safari):</b> 下部メニューの共有 ［ ⎋ ］ ➔ <b>「ホーム画面に追加」</b><br>
+            • <b>Android (Chrome):</b> 右上メニュー ［ ⋮ ］ ➔ <b>「ホーム画面に追加」</b>または<b>「アプリをインストール」</b>
+        </div>
+
+        <div class="store-desc-box">
+            <div class="store-desc-title">アプリ概要 (Beta 0.2.0)</div>
+            <div class="store-desc-text">
+                信州蓼科および関東甲信越の全市区町村に対応した高精度標高ナビゲーター。測定した標高・酸素濃度・位置情報に写真やメモを添えて保存できる「山旅ログ・ノート機能」を新搭載！
+            </div>
+        </div>
+
+        <div style="font-size: 0.7rem; color: var(--sub); padding-bottom: 5px;">
+            © 2026 架空会社COPECK. All rights reserved.
+        </div>
+    </div>
 
     <div class="container">
         <header class="header">
@@ -97,9 +176,10 @@
                 <h1 class="app-title">Tateshina Compass</h1>
                 <p class="app-subtitle">信州蓼科 標高ナビゲーター</p>
             </div>
-            <button id="openDlModalBtn" class="icon-btn" onclick="openModal()" title="データ管理">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
-            </button>
+            <div class="header-actions">
+                <button id="openNotebookBtn" class="icon-btn" onclick="openNotebookModal()" title="思い出ノート">📒</button>
+                <button id="openDlModalBtn" class="icon-btn" onclick="openModal()" title="データ管理">📥</button>
+            </div>
         </header>
 
         <main class="card">
@@ -145,10 +225,54 @@
             </div>
 
             <button id="updateBtn" class="primary-btn" onclick="requestLocation()">現在地を更新する</button>
+            <button id="recordBtn" class="secondary-btn" onclick="openRecordModal()" style="display:none;">📸 この場所の標高を記録する</button>
+            
             <div id="statusMsg" class="status-msg">起動中...</div>
         </main>
 
-        <div class="version-badge" id="versionBadge">COPECK Version Beta 0.1.16</div>
+        <div class="version-badge" id="versionBadge" onclick="openUpdateModal()">COPECK Version Beta 0.2.0 (タップして詳細)</div>
+    </div>
+
+    <!-- Record Creation Modal -->
+    <div id="recordModal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>📸 この場所を記録する</h3>
+                <button class="close-btn" onclick="closeRecordModal()">&times;</button>
+            </div>
+            
+            <div class="map-preview-box">
+                <div>地点名: <span id="recLocName" style="color:var(--accent);">--</span></div>
+                <div>標高: <span id="recElevation" style="font-size:1.1rem; color:var(--text); font-weight:900;">--</span> m (酸素 <span id="recOxygen">--</span>%)</div>
+                <div class="map-mock">
+                    📍 Lat: <span id="recLat">--</span> / Lon: <span id="recLon">--</span>
+                </div>
+            </div>
+
+            <div class="photo-picker" onclick="$('photoInput').click()">
+                <div id="photoPrompt">📷 写真を撮影・追加する</div>
+                <img id="photoPreview" class="photo-preview" src="" alt="Preview">
+                <input type="file" id="photoInput" accept="image/*" style="display:none;" onchange="handlePhotoSelect(event)">
+            </div>
+
+            <textarea id="recordNote" class="form-textarea" placeholder="メモ・思い出を入力（例：天気が最高！山頂でコーヒーブレイク）"></textarea>
+
+            <button class="primary-btn" onclick="saveTripLog()">思い出ノートに保存する</button>
+        </div>
+    </div>
+
+    <!-- Notebook / Trip Logs Modal -->
+    <div id="notebookModal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>📒 山旅の思い出ノート</h3>
+                <button class="close-btn" onclick="closeNotebookModal()">&times;</button>
+            </div>
+            
+            <div id="logsList" class="logs-list">
+                <div style="text-align:center; padding:20px; color:var(--sub); font-size:0.85rem;">記録はまだありません。「この場所を記録する」ボタンから保存してみましょう！</div>
+            </div>
+        </div>
     </div>
 
     <!-- Download Modal -->
@@ -156,7 +280,7 @@
         <div class="modal-card">
             <div class="modal-header">
                 <h3>エリアデータ管理</h3>
-                <button id="closeDlModalBtn" class="close-btn" onclick="closeModal()">&times;</button>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
             </div>
             
             <div id="areaList" class="area-list"></div>
@@ -197,7 +321,68 @@
         </div>
     </div>
 
+    <!-- Update Notice Modal (Beta 0.2.0) -->
+    <div id="updateModal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>📢 Beta 0.2.0 公開のお知らせ</h3>
+                <button class="close-btn" onclick="closeUpdateModal()">&times;</button>
+            </div>
+            <div class="notice-text">こんにちは、架空会社COPECK代表のKOSUKEです。
+新機能「山旅ノート・思い出記録」を追加した Beta 0.2.0 を公開しました！
+
+【新機能】
+• 標高を測ったら「この場所を記録する」ボタンから写真やメモを残せるようになりした。
+• 画面右上の 📒（ノートマーク）から、いつでも過去の旅の記録や高標高スポットを振り返ることができます。
+
+旅のお供にぜひお試しください！</div>
+            <button class="primary-btn" onclick="closeUpdateModal()" style="padding: 12px; margin-top: 6px;">閉じる</button>
+        </div>
+    </div>
+
     <script>
+        let deferredPrompt = null;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            const btn = $('installAppBtn');
+            if(btn) btn.style.display = 'block';
+        });
+
+        function triggerInstall() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        const landing = $('storeLanding');
+                        if(landing) landing.remove();
+                    }
+                    deferredPrompt = null;
+                });
+            } else {
+                alert('お使いのブラウザメニューから「ホーム画面に追加」または「アプリをインストール」を選択してください。');
+            }
+        }
+
+        // --- PWA判定ロジック ---
+        window.addEventListener('DOMContentLoaded', () => {
+            const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+            
+            if (isPWA) {
+                const landing = $('storeLanding');
+                if (landing) landing.remove();
+
+                const seenVersion = localStorage.getItem('seen_beta_version');
+                if (seenVersion !== '0.2.0') {
+                    openUpdateModal();
+                    localStorage.setItem('seen_beta_version', '0.2.0');
+                }
+            } else {
+                const landing = $('storeLanding');
+                if (landing) landing.style.display = 'flex';
+            }
+        });
+
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.getRegistrations().then(registrations => {
                 for (let r of registrations) r.unregister();
@@ -210,9 +395,11 @@
             return false;
         };
 
-        const DB_NAME = 'TateshinaCompassDB', DB_VERSION = 1, STORE_NAME = 'offline_grids';
+        const DB_NAME = 'TateshinaCompassDB', DB_VERSION = 2, STORE_NAME = 'offline_grids', LOGS_STORE = 'trip_logs';
         const FIXED_MESH_STEP = 0.004;
         let masterBoundsData = null;
+        let currentCapturedData = null; // 現在の測位結果を一時保持
+        let currentPhotoBase64 = null;
 
         function getBaseUrl() {
             var path = window.location.pathname;
@@ -239,7 +426,15 @@
                 try {
                     if (!window.indexedDB) return reject(new Error('IndexedDB非対応'));
                     const req = indexedDB.open(DB_NAME, DB_VERSION);
-                    req.onupgradeneeded = e => e.target.result.createObjectStore(STORE_NAME, { keyPath: 'areaId' });
+                    req.onupgradeneeded = e => {
+                        const db = e.target.result;
+                        if (!db.objectStoreNames.contains(STORE_NAME)) {
+                            db.createObjectStore(STORE_NAME, { keyPath: 'areaId' });
+                        }
+                        if (!db.objectStoreNames.contains(LOGS_STORE)) {
+                            db.createObjectStore(LOGS_STORE, { keyPath: 'id' });
+                        }
+                    };
                     req.onsuccess = () => resolve(req.result);
                     req.onerror = () => reject(req.error);
                 } catch(e) { reject(e); }
@@ -302,26 +497,146 @@
             if (modal) modal.style.display = 'none';
         }
 
+        function openUpdateModal() {
+            var modal = $('updateModal');
+            if (modal) modal.classList.add('active');
+        }
+
+        function closeUpdateModal() {
+            var modal = $('updateModal');
+            if (modal) modal.classList.remove('active');
+        }
+
+        function openRecordModal() {
+            if (!currentCapturedData) return;
+            $('recLocName').textContent = currentCapturedData.locationName;
+            $('recElevation').textContent = currentCapturedData.elevation;
+            $('recOxygen').textContent = currentCapturedData.oxygen;
+            $('recLat').textContent = currentCapturedData.lat.toFixed(4);
+            $('recLon').textContent = currentCapturedData.lon.toFixed(4);
+            
+            // Reset photo and text
+            currentPhotoBase64 = null;
+            $('photoPreview').style.display = 'none';
+            $('photoPreview').src = '';
+            $('photoPrompt').style.display = 'block';
+            $('recordNote').value = '';
+
+            $('recordModal').classList.add('active');
+        }
+
+        function closeRecordModal() {
+            $('recordModal').classList.remove('active');
+        }
+
+        async function openNotebookModal() {
+            $('notebookModal').classList.add('active');
+            await renderTripLogs();
+        }
+
+        function closeNotebookModal() {
+            $('notebookModal').classList.remove('active');
+        }
+
+        function handlePhotoSelect(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                currentPhotoBase64 = evt.target.result;
+                $('photoPreview').src = currentPhotoBase64;
+                $('photoPreview').style.display = 'block';
+                $('photoPrompt').style.display = 'none';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function saveTripLog() {
+            if (!currentCapturedData) return;
+            const noteText = $('recordNote').value.trim();
+            const logEntry = {
+                id: 'log_' + Date.now(),
+                timestamp: new Date().toLocaleString('ja-JP'),
+                locationName: currentCapturedData.locationName,
+                elevation: currentCapturedData.elevation,
+                oxygen: currentCapturedData.oxygen,
+                lat: currentCapturedData.lat,
+                lon: currentCapturedData.lon,
+                photo: currentPhotoBase64,
+                note: noteText
+            };
+
+            await getDBData('readwrite', LOGS_STORE, 'put', logEntry);
+            closeRecordModal();
+            alert('思い出ノートに保存しました！');
+        }
+
+        async function renderTripLogs() {
+            const logsList = $('logsList');
+            if (!logsList) return;
+            const allLogs = await getDBData('readonly', LOGS_STORE, 'getAll') || [];
+            allLogs.sort((a,b) => b.id.localeCompare(a.id)); // 新しい順
+
+            if (allLogs.length === 0) {
+                logsList.innerHTML = '<div style="text-align:center; padding:20px; color:var(--sub); font-size:0.85rem;">記録はまだありません。「この場所を記録する」ボタンから保存してみましょう！</div>';
+                return;
+            }
+
+            logsList.innerHTML = '';
+            allLogs.forEach(log => {
+                logsList.innerHTML += `
+                    <div class="log-card">
+                        <div class="log-header">
+                            <span class="log-date">📅 ${log.timestamp}</span>
+                            <span class="log-ele">${log.elevation.toLocaleString()} m</span>
+                        </div>
+                        <div><b>📍 ${log.locationName}</b> (Lat: ${log.lat.toFixed(4)}, Lon: ${log.lon.toFixed(4)})</div>
+                        ${log.photo ? `<img src="${log.photo}" class="log-img" alt="Memory Photo">` : ''}
+                        ${log.note ? `<div class="log-text">${log.note}</div>` : ''}
+                        <div class="log-footer">
+                            <span>大気中酸素: ${log.oxygen}%</span>
+                            <button class="del-btn" onclick="deleteTripLog('${log.id}')" title="削除">×</button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        window.deleteTripLog = async function(logId) {
+            if (confirm('この記録を削除してもよろしいですか？')) {
+                await getDBData('readwrite', LOGS_STORE, 'delete', logId);
+                renderTripLogs();
+            }
+        };
+
         function requestLocation() {
             if (!navigator.geolocation) {
                 $('statusMsg').textContent = 'GPS非対応のブラウザです';
                 return;
             }
             $('statusMsg').textContent = '現在地を取得中...';
+            $('recordBtn').style.display = 'none';
+
             navigator.geolocation.getCurrentPosition(async pos => {
                 const { latitude: lat, longitude: lon } = pos.coords;
                 $('latValue').textContent = lat.toFixed(4);
                 $('lonValue').textContent = lon.toFixed(4);
+
+                let elevation = 0, locName = '現在地', isOffline = false;
 
                 if (navigator.onLine) {
                     try {
                         const res = await fetch(`https://cyberjapandata2.gsi.go.jp/general/dem/scripts/getelevation.php?lon=${lon}&lat=${lat}&outtype=JSON`);
                         const data = await res.json();
                         if (data && data.elevation !== "-----") {
-                            const ele = Math.round(parseFloat(data.elevation));
-                            animateElevation(ele);
-                            displayResult(ele, '現在地', false);
+                            elevation = Math.round(parseFloat(data.elevation));
+                            animateElevation(elevation);
+                            displayResult(elevation, locName, false);
                             $('statusMsg').textContent = '現在地の標高を取得しました';
+                            
+                            // Save captured state
+                            currentCapturedData = { elevation, locationName: locName, oxygen: calculateOxygen(elevation), lat, lon };
+                            $('recordBtn').style.display = 'flex';
                             return;
                         }
                     } catch (e) {}
@@ -329,9 +644,15 @@
 
                 const offline = await searchOffline(lat, lon);
                 if (offline) {
-                    animateElevation(offline.elevation);
-                    displayResult(offline.elevation, offline.areaName, true);
-                    $('statusMsg').textContent = `保存データ（${offline.areaName}）を表示中`;
+                    elevation = offline.elevation;
+                    locName = offline.areaName;
+                    animateElevation(elevation);
+                    displayResult(elevation, locName, true);
+                    $('statusMsg').textContent = `保存データ（${locName}）を表示中`;
+                    
+                    // Save captured state
+                    currentCapturedData = { elevation, locationName: locName, oxygen: calculateOxygen(elevation), lat, lon };
+                    $('recordBtn').style.display = 'flex';
                 } else {
                     $('statusMsg').textContent = '対応エリア外です。データを追加してください。';
                 }
@@ -528,7 +849,6 @@
                     let percent = 15 + Math.round((completed / totalPoints) * 80);
                     fill.style.width = `${percent}%`;
                     
-                    // --- ご要望通り「30地点（または1チャンク）」ごとにログをきめ細かく更新 ---
                     if (completed % 30 < CHUNK || completed >= totalPoints) {
                         log.textContent = `高速取得中... (${completed} / ${totalPoints} 地点完了)`;
                         log.scrollTop = log.scrollHeight;
